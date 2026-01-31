@@ -21,7 +21,6 @@
       --blockBorderA: rgba(42,167,179,0.35);
       --blockBorderB: rgba(11,43,77,0.22);
 
-      /* border radius menores */
       --r-card: 10px;
       --r-input: 8px;
       --r-btn: 9px;
@@ -310,23 +309,14 @@
 
   <script>
     // ----------- ENDPOINTS / LINKS -----------
-    // Autosave (Cloudflare Worker) — usa exatamente o fetch que você mandou
     const AUTOSAVE_URL = "https://sheet-proxy.livia-clarete.workers.dev/";
-
-    // Submit final (opcional). Se você não quiser mais submit final, pode deixar vazio.
-    const WEB_APP_URL = "";
-
-    // Logo do Grupo (se vazio, renderiza placeholder)
+    const WEB_APP_URL = ""; // opcional (se quiser submit final separado)
     const LOGO_SRC = "LOGO_URL_AQUI";
-
-    // Guia
     const GUIDE_URL = "GUIA_URL_AQUI";
 
-    // Placeholder para logo (quando LOGO_SRC não estiver configurado)
     const DEFAULT_LOGO_PLACEHOLDER =
       "https://raw.githubusercontent.com/lclarete/gmb_general_report_2025/refs/heads/main/GMB_Logo.png";
 
-    // Rascunho local
     const DRAFT_STORAGE_KEY = "gmb_2025_form_draft_v1";
 
     const INTRO_TEXT = `Olá!
@@ -409,7 +399,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       { value: "estimativa_nao_estruturada", label: "Estimativa não estruturada (percepção pessoal ou da equipe organizadora)" }
     ];
 
-    // Núcleos (lista)
     const NUCLEUS_RAW = [
       "Algarve (ID_001)","Ananindeua (ID_162)","Anápolis (ID_002)","Aracaju (ID_003)","Araçuaí (ID_004)","Arapiraca (ID_005)",
       "Araraquara (ID_006)","Araras (ID_163)","Atlanta (ID_007)","Balneário (ID_008)","Barcarena (ID_009)","Barcelona (ID_010)",
@@ -472,6 +461,13 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       return id;
     }
 
+    function makeSubmissionCode_(kind){
+      const base = getDraftId_();
+      const t = Date.now();
+      if (kind === "final_submit") return base + "_FINAL_" + t;
+      return base + "_" + t;
+    }
+
     function persistLocalDraft_(){
       try{
         localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
@@ -510,7 +506,10 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       if (now - lastAutosaveAt < 350) return;
       lastAutosaveAt = now;
 
-      // Usa exatamente o fetch que você mandou, só que com payload completo
+      const isFinal = (reason === "final_submit");
+      const kind = isFinal ? "final_submit" : "draft_autosave";
+      const submissionCode = makeSubmissionCode_(isFinal ? "final_submit" : "draft_autosave");
+
       try{
         const output = await fetch(AUTOSAVE_URL, {
           method: "POST",
@@ -518,7 +517,8 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
             field1: "Hello",
             field2: "World",
             payload: {
-              kind: "draft_autosave",
+              kind: kind,
+              submissionCode: submissionCode,
               draftId: getDraftId_(),
               savedAt: new Date().toISOString(),
               reason: reason || "unknown",
@@ -533,17 +533,20 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           }),
           headers: { "Content-Type": "application/json" }
         });
-        console.log(output)
+
+        console.log(output);
+
         const status = document.getElementById("status");
-        if (status) status.textContent = "Rascunho salvo ✅";
+        if (status) {
+          status.textContent = isFinal ? "Versão final salva ✅" : "Rascunho salvo ✅";
+        }
       }catch(e){
         const status = document.getElementById("status");
-        if (status) status.textContent = "Falha ao salvar rascunho (tentará novamente)";
+        if (status) status.textContent = "Falha ao salvar (tentará novamente)";
         console.error(e);
       }
     }
 
-    // dispara autosave para qualquer edição em input/textarea/select
     document.addEventListener("input", (ev) => {
       const t = ev.target;
       if (!t) return;
@@ -552,7 +555,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       }
     }, true);
 
-    // salva ao sair
     window.addEventListener("beforeunload", () => {
       persistLocalDraft_();
     });
@@ -587,7 +589,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       const guideLine = "Acesse aqui o GUIA PARA PREENCHIMENTO.";
       const parts = INTRO_TEXT.split(guideLine);
 
-      const page = 1;
       const logoToUse = (LOGO_SRC && LOGO_SRC !== "LOGO_URL_AQUI") ? LOGO_SRC : DEFAULT_LOGO_PLACEHOLDER;
 
       app.innerHTML = `
@@ -678,7 +679,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           return;
         }
 
-        // preserva o que já existe, se possível
         const existingMap = new Map(state.projects.map(p => [p.title, p]));
         state.projects = titles.map(t => existingMap.get(t) || ({
           title: t,
@@ -869,7 +869,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         </div>
       `;
 
-      // parceiros multi seleção
       const partnerBox = document.getElementById("partnerBox");
       partnerBox.innerHTML = NUCLEUS_OPTIONS
         .filter(x => x !== "Selecione…")
@@ -892,7 +891,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         };
       });
 
-      // apoio recebido
       const supportArea = document.getElementById("supportArea");
       supportArea.innerHTML = SUPPORT_OPTIONS.map((s, idx) => `
         <div class="checkRow">
@@ -914,7 +912,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         };
       });
 
-      // atividades
       const activitiesArea = document.getElementById("activitiesArea");
       const activitiesInput = document.getElementById("activitiesCount");
 
@@ -987,7 +984,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       drawActivitiesRows();
       activitiesInput.oninput = () => { drawActivitiesRows(); debounceAutosave_("activities_count_change", { projectIndex:i }); };
 
-      // campanhas online
       const campaignsArea = document.getElementById("campaignsArea");
       const campaignsInput = document.getElementById("onlineCampaignsCount");
 
@@ -1052,7 +1048,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       drawCampaignRows();
       campaignsInput.oninput = () => { drawCampaignRows(); debounceAutosave_("campaigns_count_change", { projectIndex:i }); };
 
-      // arquivos (nota: sem backend de upload aqui, então só guardamos nomes localmente)
       const repPhoto = document.getElementById("repPhoto");
       const repPhotoStatus = document.getElementById("repPhotoStatus");
       repPhoto.onchange = () => {
@@ -1266,21 +1261,20 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
       document.getElementById("submit").onclick = async () => {
         const status = document.getElementById("status");
-        const btn = document.getElementById("submit");
-        status.textContent = "Enviando…";
-        btn.disabled = true;
+        status.textContent = "Salvando versão final…";
 
-        // ✅ GARANTE autosave final (sem debounce)
-        await autosave_("final_before_submit", { source: "submit_button" });
+        // aqui é o pulo do gato: FINAL DE VERDADE, sem debounce, com await
+        await autosave_("final_submit", { source: "submit_button" });
+
+        // se você não quer submit final separado, acabou aqui
+        if (!WEB_APP_URL || WEB_APP_URL === "YOUR_WEB_APP_URL_HERE") {
+          status.textContent = "Enviado ✅ (versão final salva)";
+          alert("Tudo certo. Versão final salva.");
+          return;
+        }
 
         try{
-          // se WEB_APP_URL não for configurado, considera como "sem submit final"
-          if (!WEB_APP_URL || WEB_APP_URL === "YOUR_WEB_APP_URL_HERE") {
-            status.textContent = "Sem envio final configurado. O rascunho já foi salvo ✅";
-            alert("Sem envio final configurado. O rascunho já foi salvo.");
-            btn.disabled = false;
-            return;
-          }
+          status.textContent = "Enviando…";
 
           const payload = {
             nucleus: state.nucleus,
@@ -1299,16 +1293,13 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
           status.textContent = "Enviado ✅";
           alert("Tudo certo. Respostas enviadas.");
-          btn.disabled = false;
         } catch(e){
           status.textContent = "Erro ao enviar: " + e.message;
           alert("Erro ao enviar: " + e.message);
-          btn.disabled = false;
         }
       };
     }
 
-    // ---------- validação visual ----------
     function setFieldError_(key, msg){
       const map = {
         nucleus: ["nucleus", "lbl_nucleus", "err_nucleus"],
@@ -1352,7 +1343,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       document.querySelectorAll(".err").forEach(x => { x.style.display="none"; x.textContent=""; });
     }
 
-    // ---------- helpers ----------
     function clampInt(v, min, max){
       const n = Number.parseInt(v, 10);
       if (Number.isNaN(n)) return min;
@@ -1368,8 +1358,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         .replaceAll("'", "&#039;");
     }
 
-    // ----------- INIT -----------
-    // restaura rascunho local e já dispara autosave "open"
     tryRestoreLocalDraft_();
     render();
     debounceAutosave_("open_form", { restored: true });
