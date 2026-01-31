@@ -1,0 +1,1213 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pesquisa sobre projetos realizados em 2025</title>
+  <style>
+    :root{
+      --navy:#0b2b4d;
+      --teal:#2aa7b3;
+      --text:#111;
+      --muted:#5f6368;
+      --border:#e6e6e6;
+      --bg:#ffffff;
+
+      --danger:#b00020;
+      --dangerBg: rgba(176,0,32,0.08);
+
+      --blockA: rgba(42,167,179,0.10);
+      --blockB: rgba(11,43,77,0.06);
+      --blockBorderA: rgba(42,167,179,0.35);
+      --blockBorderB: rgba(11,43,77,0.22);
+
+      /* radius menores */
+      --r-card: 5px;
+      --r-input: 5px;
+      --r-btn: 5px;
+      --r-pillbox: 5px;
+      --r-qnum: 5px;
+      --r-block: 5px;
+    }
+
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+    }
+
+    .wrap{
+      max-width: 980px;
+      margin: 28px auto;
+      padding: 0 16px 40px;
+    }
+
+    h1{
+      font-size: 34px;
+      margin: 0 0 14px;
+      color: var(--navy);
+      letter-spacing: -0.3px;
+    }
+
+    .card{
+      border:1px solid var(--border);
+      border-radius: var(--r-card);
+      padding: 18px;
+      background:#fff;
+    }
+
+    .title{
+      font-size: 18px;
+      font-weight: 780;
+      margin: 0 0 6px;
+      color: var(--navy);
+    }
+
+    .muted{
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0 0 12px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .q{
+      display:flex;
+      align-items:flex-start;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .qnum{
+      min-width: 48px;
+      height: 34px;
+      border-radius: var(--r-qnum);
+      background: rgba(11,43,77,0.08);
+      color: var(--navy);
+      font-weight: 850;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin-top: 6px;
+      font-size: 13px;
+      padding: 0 8px;
+      box-sizing: border-box;
+      letter-spacing: 0.2px;
+    }
+
+    .qbody{ flex: 1; }
+
+    label{
+      display:block;
+      font-weight:650;
+      margin-top: 0;
+      color: var(--navy);
+    }
+
+    .reqStar{
+      color: var(--danger);
+      font-weight: 900;
+      margin-left: 6px;
+    }
+
+    input, textarea, select{
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px 12px;
+      border-radius: var(--r-input);
+      border: 1px solid #d7d7d7;
+      margin-top: 6px;
+      font-size: 15px;
+      background:#fff;
+      outline: none;
+    }
+
+    input:focus, textarea:focus, select:focus{
+      border-color: rgba(42,167,179,0.65);
+      box-shadow: 0 0 0 3px rgba(42,167,179,0.15);
+    }
+
+    .invalid{
+      border-color: var(--danger) !important;
+      box-shadow: 0 0 0 3px rgba(176,0,32,0.12) !important;
+      background: var(--dangerBg);
+    }
+
+    .err{
+      color: var(--danger);
+      font-size: 13px;
+      margin-top: 6px;
+      line-height: 1.35;
+      font-weight: 650;
+    }
+
+    textarea{
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .divider{
+      height: 1px;
+      background: var(--border);
+      margin: 18px 0;
+    }
+
+    .buttons{
+      display:flex;
+      gap: 10px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    button{
+      padding: 10px 14px;
+      border-radius: var(--r-btn);
+      border:1px solid #bbb;
+      background:#fff;
+      cursor:pointer;
+      font-size: 15px;
+      color: var(--navy);
+    }
+
+    button.primary{
+      background: var(--navy);
+      color:#fff;
+      border-color: var(--navy);
+    }
+
+    button.primary:hover{ filter: brightness(1.05); }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td{
+      text-align:left;
+      padding:10px 8px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+
+    th{
+      font-size: 13px;
+      color:#2d3748;
+    }
+
+    .mini{
+      font-size: 13px;
+      color:#555;
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+
+    .eventWrap{ overflow-x: auto; }
+    .eventTable{ min-width: 1020px; }
+    .eventTable input, .eventTable select{
+      margin-top: 0;
+      padding: 10px;
+      border-radius: var(--r-input);
+    }
+
+    .line3, .line2{
+      display:flex;
+      gap:12px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+
+    .field{ flex:1; min-width: 240px; }
+    .field.small{ min-width: 220px; }
+
+    .checkRow{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      margin: 10px 0;
+    }
+    .checkRow input{ width:auto; margin:2px 0 0; }
+
+    .pillbox{
+      border: 1px solid #e1e1e1;
+      border-radius: var(--r-pillbox);
+      padding: 10px 12px;
+      margin-top: 10px;
+      max-height: 260px;
+      overflow: auto;
+      background: #fff;
+    }
+
+    .block{
+      border-radius: var(--r-block);
+      padding: 14px 14px 16px;
+      margin-top: 10px;
+    }
+
+    .blockA{
+      background: var(--blockA);
+      border: 1px solid var(--blockBorderA);
+    }
+
+    .blockB{
+      background: var(--blockB);
+      border: 1px solid var(--blockBorderB);
+    }
+
+    .blockTitle{
+      font-weight: 850;
+      color: var(--navy);
+      margin: 0 0 6px;
+    }
+
+    .introHeader{
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .logo{
+      width: 260px;
+      max-width: 70%;
+      height: auto;
+    }
+
+    .introText{
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--muted);
+      white-space: pre-wrap;
+      margin-top: 6px;
+    }
+
+    .introLinks{
+      margin-top: 14px;
+      display:flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    a{
+      color: var(--teal);
+      text-decoration: none;
+      font-weight: 650;
+    }
+
+    a:hover{ text-decoration: underline; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1>Pesquisa sobre projetos realizados em 2025</h1>
+    <div id="app" class="card"></div>
+  </div>
+
+  <script>
+    const WEB_APP_URL = "YOUR_WEB_APP_URL_HERE";
+    const LOGO_SRC = "LOGO_URL_AQUI";
+    const GUIDE_URL = "GUIA_URL_AQUI";
+
+    const INTRO_TEXT = `Olá!
+
+Obrigada por fazer parte do Grupo Mulheres do Brasil e por liderar ações que geram impacto real nos territórios. Cada iniciativa realizada fortalece o nosso propósito coletivo e o protagonismo feminino.
+
+Registrar essas ações é fundamental. É por meio da organização, da visibilidade e da transparência que demonstramos a força do nosso trabalho, fortalecemos a credibilidade institucional do Grupo e ampliamos nosso impacto.
+
+Este formulário reúne as informações sobre as iniciativas realizadas pelo seu Núcleo em 2025. O preenchimento está mais simples e permite registrar mais de um projeto em um único envio, facilitando o processo.
+
+As informações compartilhadas irão compor o Relatório de Atividades 2025, um instrumento de registro, visibilidade e memória institucional, que reconhece e valoriza o impacto gerado pelos Núcleos.
+
+Agradecemos pela sua dedicação e colaboração.
+
+Acesse aqui o GUIA PARA PREENCHIMENTO.
+
+Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdobrasil.org.br ou parcerias@grupomulheresdobrasil.org.br.`;
+
+    const CAUSE_OPTIONS = [
+      "Selecione…",
+      "60+",
+      "80 em 8",
+      "Agronegócio",
+      "Artesanato",
+      "Combate à violência contra a mulher",
+      "Comunicação",
+      "Conexão bairros e comunidades",
+      "Cultura",
+      "Cultura de paz",
+      "Educação",
+      "Empreendedorismo",
+      "Esporte",
+      "Igualdade racial",
+      "Inclusão de pessoas com deficiência",
+      "Inserção de refugiados",
+      "LGBTQIAPN+",
+      "Meninas do Brasil",
+      "Mundo digital",
+      "Políticas públicas",
+      "Saúde",
+      "Sustentabilidade",
+      "Vozes"
+    ];
+
+    const TARGET_AUDIENCE_OPTIONS = [
+      "Selecione…",
+      "Crianças",
+      "Adolescentes",
+      "Jovens",
+      "Adultos",
+      "Idosos",
+      "Todos"
+    ];
+
+    const FREQUENCY_OPTIONS = [
+      { value: "", label: "Selecione…" },
+      { value: "semanal", label: "Semanal" },
+      { value: "anual", label: "Anual" },
+      { value: "bianual", label: "Bianual" },
+      { value: "nao_recorrente", label: "Não recorrente" }
+    ];
+
+    const SUPPORT_OPTIONS = [
+      { key: "apoio_financeiro", label: "Apoio financeiro" },
+      { key: "cessao_espaco_fisico", label: "Cessão de espaço físico (salas, auditórios, equipamentos, etc.)" },
+      { key: "materiais_alimentacao", label: "Fornecimento de materiais e alimentação (materiais de apoio, coffee break, lanches, entre outros)" },
+      { key: "comunicacao_multimidia", label: "Apoio em comunicação e multimídia (fotografia, vídeo, produção de conteúdo, divulgação, etc.)" },
+      { key: "outros", label: "Outros (especificar no campo Notas)" }
+    ];
+
+    const EVENT_FORMAT_OPTIONS = [
+      { value: "online", label: "Online" },
+      { value: "hibrido", label: "Híbrido" },
+      { value: "presencial", label: "Presencial" }
+    ];
+
+    const PARTICIPANT_RECORD_OPTIONS = [
+      { value: "registro_formal_manual", label: "Registro formal manual (lista de presença, planilha de acompanhamento, ficha de inscrição física)" },
+      { value: "plataformas_digitais", label: "Registro em plataformas digitais (Eventbrite, Zoom, ferramentas similares)" },
+      { value: "estimativa_nao_estruturada", label: "Estimativa não estruturada (percepção pessoal ou da equipe organizadora)" }
+    ];
+
+    const NUCLEUS_RAW = [
+      "Algarve (ID_001)","Ananindeua (ID_162)","Anápolis (ID_002)","Aracaju (ID_003)","Araçuaí (ID_004)","Arapiraca (ID_005)",
+      "Araraquara (ID_006)","Araras (ID_163)","Atlanta (ID_007)","Balneário (ID_008)","Barcarena (ID_009)","Barcelona (ID_010)",
+      "Barra Mansa (ID_011)","Barueri (ID_012)","Bauru (ID_013)","Belém (ID_014)","Bélgica (ID_015)","Belo Horizonte (ID_016)",
+      "Berlim (ID_017)","Blumenau (ID_018)","Boa Vista (ID_019)","Bocaiúva (ID_175)","Bogotá (ID_020)","Boston (ID_021)","Braga (ID_022)",
+      "Brasília (ID_023)","Buenos Aires (ID_024)","Caboré (ID_025)","Cachoeiro de Itapemirim (ID_026)","Cairo (ID_027)","Campina Grande (ID_173)",
+      "Campinas (ID_028)","Campo Grande (ID_029)","Campos dos Goytacazes (ID_030)","Capão Redondo (ID_031)","Cariús (ID_032)","Casa Nova (ID_033)",
+      "Caxias do Sul (ID_034)","Central Flórida (ID_035)","Central (ID_036)","Chapada dos Veadeiros (ID_037)","Chapada Gaúcha (ID_038)",
+      "Chicago (ID_039)","Cidade Tiradentes (ID_040)","Concórdia (ID_041)","Cotia (ID_042)","Cuiabá (ID_043)","Curitiba (ID_044)","Curvelo (ID_045)",
+      "Diadema (ID_164)","Dinamarca (ID_156)","Dubai (ID_046)","Duque de Caxias (ID_178)","Dusseldorf (ID_047)","Estocolmo (ID_048)","Évora (ID_049)",
+      "Ferraz de Vasconcelos (ID_050)","Florença (ID_168)","Florianópolis (ID_051)","Fortaleza (ID_052)","Franca (ID_053)","Frankfurt (ID_054)",
+      "Genebra (ID_183)","Goiânia (ID_055)","Governador Valadares (ID_056)","Guaíba (ID_057)","Hortolândia (ID_182)","Houston (ID_169)","Ilhéus (ID_058)",
+      "Imperatriz (ID_059)","Irlanda (ID_060)","Itabira (ID_061)","Itabuna (ID_062)","Itacarambi (ID_063)","Itapecerica da Serra (ID_165)",
+      "Itatiba (ID_064)","Itinga (ID_065)","Januária (ID_066)","João Pessoa (ID_067)","Joinville (ID_068)","Juiz de Fora (ID_069)","Jundiaí (ID_070)",
+      "Lavras (ID_071)","Leme (ID_072)","Líbano (ID_073)","Lisboa (ID_074)","Londres (ID_075)","Londrina (ID_076)","Luanda (ID_077)","Macaé (ID_166)",
+      "Macapá (ID_078)","Maceió (ID_079)","Madrid (ID_080)","Manaus (ID_081)","Manga (ID_082)","Manhuaçu (ID_083)","Maricá (ID_084)","Maringá (ID_085)",
+      "Mauá (ID_086)","Milão (ID_087)","Mogi Mirim (ID_088)","Monte Carmelo (ID_089)","Montes Claros (ID_090)","Montreal (ID_157)","Munique (ID_155)",
+      "Nairóbi (ID_091)","Natal (ID_092)","Niedersachsen (ID_167)","Niterói (ID_093)","Nova Friburgo (ID_094)","Nova Iguaçu (ID_095)","Nova York (ID_096)",
+      "Osasco (ID_097)","Palmas (ID_098)","Paracatu (ID_177)","Parauapebas (ID_099)","Paris (ID_100)","Pedras de Maria da Cruz (ID_101)","Petrolina (ID_102)",
+      "Pindamonhangaba (ID_103)","Piracicaba (ID_104)","Pittsburgh (ID_170)","Pontal do Paraná (ID_181)","Porto (ID_105)","Porto Alegre (ID_106)","Porto Seguro (ID_107)",
+      "Porto Velho (ID_108)","Presidente Prudente (ID_109)","Recife (ID_110)","Ribeirão Preto (ID_111)","Rio Branco (ID_112)","Rio Claro (ID_179)","Rio das Ostras (ID_113)",
+      "Rio de Janeiro (ID_114)","Rio Grande (ID_115)","Roma (ID_158)","Rotterdam (ID_154)","Salinas (ID_176)","Salto (ID_171)","Salvador (ID_116)","Santa Maria (ID_117)",
+      "Santana (ID_180)","Santiago (ID_118)","Santiago (CL) (ID_119)","Santo André (ID_120)","Santos (ID_121)","São Bernardo do Campo (ID_122)","São Carlos (ID_123)",
+      "São Gonçalo (ID_124)","São João da Boa Vista (ID_125)","São José do Rio Preto (ID_126)","São José dos Campos (ID_127)","São Lourenço (ID_128)","São Luis (ID_129)",
+      "São Paulo (ID_130)","São Sebastião do Rio Verde (ID_131)","Sertãozinho (ID_132)","Sobradinho (ID_133)","Sombrio (ID_134)","Sorocaba (ID_135)","Suíça (ID_136)",
+      "Sul da Flórida (ID_137)","Tahiti (ID_160)","Taubaté (ID_138)","Teresina (ID_139)","Tōkai (ID_140)","Toronto (ID_161)","Ubatã (ID_172)","Uberaba (ID_141)",
+      "Uberlândia (ID_142)","Uppsala (ID_143)","Vale do Silício (ID_144)","Valinhos (ID_145)","Vancouver (ID_146)","Vargem Grande do Sul (ID_147)","Vazante (ID_148)",
+      "Vietnã (ID_149)","Vitória (ID_150)","Volta Redonda (ID_151)","Washington, D.C. (ID_152)","Wolfsburg (ID_153)","Açailândia (ID_174)"
+    ];
+
+    const NUCLEUS_OPTIONS = buildOptions_(NUCLEUS_RAW);
+
+    const state = {
+      nucleus: "",
+      projects: [],
+      contactName: "",
+      contactPhone: "",
+      contactEmail: "",
+      stepIndex: 0
+    };
+
+    const app = document.getElementById("app");
+
+    function buildOptions_(arr){
+      const cleaned = arr.map(s => String(s||"").trim()).filter(Boolean);
+      const set = new Set(cleaned);
+      const list = Array.from(set).sort((a,b)=>a.localeCompare(b));
+      return ["Selecione…", ...list];
+    }
+
+    function qNum(page, q){
+      return `${page}.${q}`;
+    }
+
+    function render(){
+      app.innerHTML = "";
+      if (state.stepIndex === 0) return renderIntro();
+      if (state.stepIndex === 1) return renderList();
+
+      const n = state.projects.length;
+      const start = 2;
+      const end = start + n - 1;
+
+      if (state.stepIndex >= start && state.stepIndex <= end) return renderProject(state.stepIndex - start);
+
+      const contactStep = end + 1;
+      if (state.stepIndex === contactStep) return renderContact();
+
+      const reviewStep = end + 2;
+      if (state.stepIndex === reviewStep) return renderReview();
+
+      state.stepIndex = 0;
+      return renderIntro();
+    }
+
+    function renderIntro(){
+      const guideLine = "Acesse aqui o GUIA PARA PREENCHIMENTO.";
+      const parts = INTRO_TEXT.split(guideLine);
+
+      const page = 1;
+
+      app.innerHTML = `
+        <div class="introHeader">
+          ${LOGO_SRC && LOGO_SRC !== "LOGO_URL_AQUI"
+            ? `<img class="logo" src="${escapeHtml(LOGO_SRC)}" alt="Grupo Mulheres do Brasil" />`
+            : `<div class="muted" style="margin:0;">(Logo: cole a URL pública em LOGO_SRC)</div>`}
+        </div>
+
+        <div class="introText">${escapeHtml(parts[0] || "")}</div>
+
+        <div class="introLinks">
+          ${GUIDE_URL && GUIDE_URL !== "GUIA_URL_AQUI"
+            ? `<a href="${escapeHtml(GUIDE_URL)}" target="_blank" rel="noopener noreferrer">Acesse aqui o GUIA PARA PREENCHIMENTO</a>`
+            : `<div class="muted">(Guia: cole a URL pública em GUIDE_URL)</div>`}
+        </div>
+
+        <div class="introText">${escapeHtml(parts[1] || "")}</div>
+
+        <div class="buttons">
+          <button class="primary" id="start">Continuar</button>
+        </div>
+      `;
+      document.getElementById("start").onclick = () => { state.stepIndex = 1; render(); };
+    }
+
+    function renderList(){
+      const page = 2;
+
+      app.innerHTML = `
+        <div class="title">Lista de projetos</div>
+
+        <div class="q">
+          <div class="qnum">${qNum(page,1)}</div>
+          <div class="qbody">
+            <label id="lbl_nucleus">Núcleo responsável pela iniciativa</label>
+            <select id="nucleus"></select>
+            <div class="err" id="err_nucleus" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="q">
+          <div class="qnum">${qNum(page,2)}</div>
+          <div class="qbody">
+            <label>Liste, um por linha, todos os projetos que foram executados pelo seu comitê em 2025.</label>
+            <textarea id="titles" rows="10" placeholder="Projeto A&#10;Projeto B&#10;Projeto C"></textarea>
+            <div class="err" id="err_titles" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button id="back">Voltar</button>
+          <button class="primary" id="go">Continuar</button>
+        </div>
+      `;
+
+      const sel = document.getElementById("nucleus");
+      sel.innerHTML = NUCLEUS_OPTIONS.map(x => `<option value="${escapeHtml(x)}" ${(state.nucleus===x)?"selected":""}>${escapeHtml(x)}</option>`).join("");
+
+      document.getElementById("back").onclick = () => { state.stepIndex = 0; render(); };
+
+      document.getElementById("go").onclick = () => {
+        clearErrors_();
+
+        const nucleusSel = sel.value;
+        if (!nucleusSel || nucleusSel === "Selecione…") {
+          setFieldError_("nucleus", "Selecione o Núcleo responsável pela iniciativa.");
+          return;
+        }
+        state.nucleus = nucleusSel;
+
+        const raw = document.getElementById("titles").value;
+        const titles = raw.split("\n").map(s => s.trim()).filter(Boolean);
+
+        if (titles.length === 0) {
+          setFieldError_("titles", "Adicione pelo menos 1 projeto (um por linha).");
+          return;
+        }
+
+        state.projects = titles.map(t => ({
+          title: t,
+          objective: "",
+          cause: "",
+          frequency: "",
+          targetAudience: "",
+
+          partnerNuclei: [],
+          volunteersInvolved: "",
+
+          activitiesCount: 0,
+          activities: [],
+
+          onlineCampaignsCount: 0,
+          onlineCampaigns: [],
+
+          supportReceived: [],
+          notes: "",
+
+          representativePhotoFiles: [],
+          supportMaterialFiles: []
+        }));
+
+        state.stepIndex = 2;
+        render();
+      };
+    }
+
+    function renderProject(i){
+      const p = state.projects[i];
+      const n = state.projects.length;
+
+      // Página dinâmica: a partir da 3
+      const page = 3 + i;
+
+      app.innerHTML = `
+        <div class="title">Vamos falar sobre: ${escapeHtml(p.title)}</div>
+        <p class="muted">Projeto ${i+1} de ${n}</p>
+
+        <div class="q">
+          <div class="qnum">${qNum(page,1)}</div>
+          <div class="qbody">
+            <label id="lbl_objective">Objetivo da iniciativa</label>
+            <textarea id="objective" placeholder="Descreva o objetivo">${escapeHtml(p.objective)}</textarea>
+            <div class="err" id="err_objective" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="line3">
+          <div class="field">
+            <div class="q">
+              <div class="qnum">${qNum(page,2)}</div>
+              <div class="qbody">
+                <label id="lbl_cause">Causa</label>
+                <select id="cause">
+                  ${CAUSE_OPTIONS.map(c => `<option value="${escapeHtml(c)}" ${(p.cause===c)?"selected":""}>${escapeHtml(c)}</option>`).join("")}
+                </select>
+                <div class="err" id="err_cause" style="display:none;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="q">
+              <div class="qnum">${qNum(page,3)}</div>
+              <div class="qbody">
+                <label id="lbl_frequency">Frequência</label>
+                <select id="frequency">
+                  ${FREQUENCY_OPTIONS.map(o => `<option value="${o.value}" ${(p.frequency===o.value)?"selected":""}>${escapeHtml(o.label)}</option>`).join("")}
+                </select>
+                <div class="err" id="err_frequency" style="display:none;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="q">
+              <div class="qnum">${qNum(page,4)}</div>
+              <div class="qbody">
+                <label id="lbl_audience">Público-alvo</label>
+                <select id="audience">
+                  ${TARGET_AUDIENCE_OPTIONS.map(a => `<option value="${escapeHtml(a)}" ${(p.targetAudience===a)?"selected":""}>${escapeHtml(a)}</option>`).join("")}
+                </select>
+                <div class="err" id="err_audience" style="display:none;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="line2">
+          <div class="field">
+            <div class="q">
+              <div class="qnum">${qNum(page,5)}</div>
+              <div class="qbody">
+                <label>Assinale os Núcleos que participaram desta iniciativa</label>
+                <div class="pillbox" id="partnerBox"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field small">
+            <div class="q">
+              <div class="qnum">${qNum(page,6)}</div>
+              <div class="qbody">
+                <label id="lbl_volunteers">Número de voluntárias envolvidas no projeto</label>
+                <input id="volunteersInvolved" type="number" min="0" placeholder="Ex: 8" value="${escapeHtml(p.volunteersInvolved)}" />
+                <div class="err" id="err_volunteers" style="display:none;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="block blockA">
+          <div class="blockTitle">Agora vamos falar somente das atividades realizadas</div>
+
+          <div class="q" style="margin-top: 8px;">
+            <div class="qnum">${qNum(page,7)}</div>
+            <div class="qbody">
+              <label id="lbl_activitiesCount">Número de atividades realizadas</label>
+              <input id="activitiesCount" type="number" min="0" placeholder="Ex: 10" value="${escapeHtml(p.activitiesCount)}" />
+              <div class="mini">Considerar apenas iniciativas. Não considerar campanhas online.</div>
+              <div class="err" id="err_activitiesCount" style="display:none;"></div>
+            </div>
+          </div>
+
+          <div id="activitiesArea" class="section"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="q">
+          <div class="qnum">${qNum(page,8)}</div>
+          <div class="qbody">
+            <label>Tipo de parceria ou apoio recebido (assinale todas as opções aplicáveis):</label>
+            <div id="supportArea" class="section"></div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="block blockB">
+          <div class="blockTitle">Agora vamos falar somente de campanhas online</div>
+
+          <div class="q" style="margin-top: 8px;">
+            <div class="qnum">${qNum(page,9)}</div>
+            <div class="qbody">
+              <label id="lbl_onlineCampaignsCount">Número de campanhas online</label>
+              <input id="onlineCampaignsCount" type="number" min="0" placeholder="Ex: 3" value="${escapeHtml(p.onlineCampaignsCount)}" />
+              <div class="mini">Ao preencher, aparecerão linhas com data + nome da campanha + número de postagens + número de visualizações + número de interações.</div>
+              <div class="err" id="err_onlineCampaignsCount" style="display:none;"></div>
+            </div>
+          </div>
+
+          <div id="campaignsArea" class="section"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="q">
+          <div class="qnum">${qNum(page,10)}</div>
+          <div class="qbody">
+            <label>Notas (opcional)</label>
+            <textarea id="notes" placeholder="Detalhes extras">${escapeHtml(p.notes)}</textarea>
+            <div class="mini">Se marcou “Outros”, descreva aqui.</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="q">
+          <div class="qnum">${qNum(page,11)}</div>
+          <div class="qbody">
+            <label>Anexar foto representativa do projeto</label>
+            <input id="repPhoto" type="file" accept="image/*" />
+            <div id="repPhotoStatus" class="mini"></div>
+          </div>
+        </div>
+
+        <div class="q">
+          <div class="qnum">${qNum(page,12)}</div>
+          <div class="qbody">
+            <label>Anexar materiais de apoio do projeto</label>
+            <input id="supportFiles" type="file" multiple />
+            <div id="supportFilesStatus" class="mini"></div>
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button id="back">Voltar</button>
+          <button class="primary" id="next">Próximo</button>
+        </div>
+      `;
+
+      // parceiros multi seleção
+      const partnerBox = document.getElementById("partnerBox");
+      partnerBox.innerHTML = NUCLEUS_OPTIONS
+        .filter(x => x !== "Selecione…")
+        .map(name => `
+          <div class="checkRow" style="margin:8px 0;">
+            <input type="checkbox" data-partner="${escapeHtml(name)}" ${p.partnerNuclei.includes(name) ? "checked":""} />
+            <div>${escapeHtml(name)}</div>
+          </div>
+        `).join("");
+
+      partnerBox.querySelectorAll("input[data-partner]").forEach(cb => {
+        cb.onchange = () => {
+          const name = cb.getAttribute("data-partner");
+          if (cb.checked) {
+            if (!p.partnerNuclei.includes(name)) p.partnerNuclei.push(name);
+          } else {
+            p.partnerNuclei = p.partnerNuclei.filter(x => x !== name);
+          }
+        };
+      });
+
+      // apoio recebido
+      const supportArea = document.getElementById("supportArea");
+      supportArea.innerHTML = SUPPORT_OPTIONS.map((s, idx) => `
+        <div class="checkRow">
+          <input type="checkbox" data-support="${idx}" ${p.supportReceived.includes(s.key) ? "checked" : ""} />
+          <div>${escapeHtml(s.label)}</div>
+        </div>
+      `).join("");
+
+      supportArea.querySelectorAll("input[data-support]").forEach(inp => {
+        inp.onchange = () => {
+          const idx = Number(inp.getAttribute("data-support"));
+          const key = SUPPORT_OPTIONS[idx].key;
+          if (inp.checked) {
+            if (!p.supportReceived.includes(key)) p.supportReceived.push(key);
+          } else {
+            p.supportReceived = p.supportReceived.filter(x => x !== key);
+          }
+        };
+      });
+
+      // atividades
+      const activitiesArea = document.getElementById("activitiesArea");
+      const activitiesInput = document.getElementById("activitiesCount");
+
+      function drawActivitiesRows(){
+        const count = clampInt(activitiesInput.value, 0, 200);
+        const arr = Array.isArray(p.activities) ? [...p.activities] : [];
+
+        while (arr.length < count) {
+          arr.push({ date:"", enrolled:"", participants:"", format:"presencial", participantRecord:"registro_formal_manual" });
+        }
+        if (arr.length > count) arr.length = count;
+
+        p.activitiesCount = count;
+        p.activities = arr;
+
+        if (count === 0) { activitiesArea.innerHTML = ""; return; }
+
+        const rows = arr.map((ev, idx) => `
+          <tr>
+            <td><input data-a-date="${idx}" type="date" value="${escapeHtml(ev.date)}" /></td>
+            <td><input data-a-enrolled="${idx}" type="number" min="0" placeholder="Inscritos" value="${escapeHtml(ev.enrolled)}" /></td>
+            <td><input data-a-participants="${idx}" type="number" min="0" placeholder="Participantes" value="${escapeHtml(ev.participants)}" /></td>
+            <td>
+              <select data-a-format="${idx}">
+                ${EVENT_FORMAT_OPTIONS.map(o => `<option value="${o.value}" ${ev.format===o.value?"selected":""}>${escapeHtml(o.label)}</option>`).join("")}
+              </select>
+            </td>
+            <td>
+              <select data-a-record="${idx}">
+                ${PARTICIPANT_RECORD_OPTIONS.map(o => `<option value="${o.value}" ${ev.participantRecord===o.value?"selected":""}>${escapeHtml(o.label)}</option>`).join("")}
+              </select>
+            </td>
+          </tr>
+        `).join("");
+
+        activitiesArea.innerHTML = `
+          <div class="eventWrap">
+            <table class="eventTable">
+              <thead>
+                <tr>
+                  <th>Data da atividade</th>
+                  <th>Número de inscritos para a atividade</th>
+                  <th>Número de participantes</th>
+                  <th>Formato</th>
+                  <th>Registro do número de participantes (assinale a opção que melhor descreve como o dado foi obtido):</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        `;
+
+        activitiesArea.querySelectorAll("input[data-a-date]").forEach(inp => {
+          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-date"))].date = inp.value; };
+        });
+        activitiesArea.querySelectorAll("input[data-a-enrolled]").forEach(inp => {
+          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-enrolled"))].enrolled = inp.value; };
+        });
+        activitiesArea.querySelectorAll("input[data-a-participants]").forEach(inp => {
+          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-participants"))].participants = inp.value; };
+        });
+        activitiesArea.querySelectorAll("select[data-a-format]").forEach(sel => {
+          sel.onchange = () => { p.activities[Number(sel.getAttribute("data-a-format"))].format = sel.value; };
+        });
+        activitiesArea.querySelectorAll("select[data-a-record]").forEach(sel => {
+          sel.onchange = () => { p.activities[Number(sel.getAttribute("data-a-record"))].participantRecord = sel.value; };
+        });
+      }
+
+      drawActivitiesRows();
+      activitiesInput.oninput = drawActivitiesRows;
+
+      // campanhas online
+      const campaignsArea = document.getElementById("campaignsArea");
+      const campaignsInput = document.getElementById("onlineCampaignsCount");
+
+      function drawCampaignRows(){
+        const count = clampInt(campaignsInput.value, 0, 200);
+        const arr = Array.isArray(p.onlineCampaigns) ? [...p.onlineCampaigns] : [];
+
+        while (arr.length < count) {
+          arr.push({ date:"", name:"", posts:"", views:"", interactions:"" });
+        }
+        if (arr.length > count) arr.length = count;
+
+        p.onlineCampaignsCount = count;
+        p.onlineCampaigns = arr;
+
+        if (count === 0) { campaignsArea.innerHTML = ""; return; }
+
+        const rows = arr.map((c, idx) => `
+          <tr>
+            <td><input data-c-date="${idx}" type="date" value="${escapeHtml(c.date)}" /></td>
+            <td><input data-c-name="${idx}" type="text" placeholder="Nome da campanha" value="${escapeHtml(c.name)}" /></td>
+            <td><input data-c-posts="${idx}" type="number" min="0" placeholder="Postagens" value="${escapeHtml(c.posts)}" /></td>
+            <td><input data-c-views="${idx}" type="number" min="0" placeholder="Visualizações" value="${escapeHtml(c.views)}" /></td>
+            <td><input data-c-interactions="${idx}" type="number" min="0" placeholder="Interações" value="${escapeHtml(c.interactions)}" /></td>
+          </tr>
+        `).join("");
+
+        campaignsArea.innerHTML = `
+          <div class="eventWrap">
+            <table class="eventTable" style="min-width: 980px;">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Nome da campanha</th>
+                  <th>Número de postagens</th>
+                  <th>Número de visualizações</th>
+                  <th>Número de interações</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        `;
+
+        campaignsArea.querySelectorAll("input[data-c-date]").forEach(inp => {
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-date"))].date = inp.value; };
+        });
+        campaignsArea.querySelectorAll("input[data-c-name]").forEach(inp => {
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-name"))].name = inp.value; };
+        });
+        campaignsArea.querySelectorAll("input[data-c-posts]").forEach(inp => {
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-posts"))].posts = inp.value; };
+        });
+        campaignsArea.querySelectorAll("input[data-c-views]").forEach(inp => {
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-views"))].views = inp.value; };
+        });
+        campaignsArea.querySelectorAll("input[data-c-interactions]").forEach(inp => {
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-interactions"))].interactions = inp.value; };
+        });
+      }
+
+      drawCampaignRows();
+      campaignsInput.oninput = drawCampaignRows;
+
+      document.getElementById("back").onclick = () => {
+        saveProject(i);
+        state.stepIndex = Math.max(1, state.stepIndex - 1);
+        render();
+      };
+
+      document.getElementById("next").onclick = () => {
+        saveProject(i);
+        clearErrors_();
+
+        let ok = true;
+
+        if (!p.objective.trim()) { ok = false; setFieldError_("objective", "Preencha o objetivo da iniciativa."); }
+        if (!p.cause) { ok = false; setFieldError_("cause", "Selecione a causa."); }
+        if (!p.frequency) { ok = false; setFieldError_("frequency", "Selecione a frequência."); }
+        if (!p.targetAudience) { ok = false; setFieldError_("audience", "Selecione o público-alvo."); }
+        if (p.volunteersInvolved === "" || p.volunteersInvolved === null) { ok = false; setFieldError_("volunteers", "Preencha o número de voluntárias envolvidas."); }
+
+        if (p.activitiesCount > 0) {
+          const missing = p.activities.some(ev =>
+            !ev.date || ev.enrolled === "" || ev.participants === "" || !ev.format || !ev.participantRecord
+          );
+          if (missing) {
+            ok = false;
+            setFieldError_("activitiesCount", "Existem atividades com campos em branco. Preencha todos os campos ou ajuste o número de atividades.");
+          }
+        }
+
+        if (p.onlineCampaignsCount > 0) {
+          const missingC = p.onlineCampaigns.some(c =>
+            !c.date || !c.name.trim() || c.posts === "" || c.views === "" || c.interactions === ""
+          );
+          if (missingC) {
+            ok = false;
+            setFieldError_("onlineCampaignsCount", "Existem campanhas com campos em branco. Preencha todos os campos ou ajuste o número de campanhas.");
+          }
+        }
+
+        if (p.supportReceived.includes("outros") && !p.notes.trim()) {
+          ok = false;
+          alert("Você marcou “Outros (especificar no campo Notas)”. Por favor, descreva em Notas.");
+        }
+
+        if (!ok) return;
+
+        const lastProjectStep = 2 + n - 1;
+        if (state.stepIndex === lastProjectStep) state.stepIndex = lastProjectStep + 1;
+        else state.stepIndex += 1;
+
+        render();
+      };
+    }
+
+    function saveProject(i){
+      const p = state.projects[i];
+      p.objective = document.getElementById("objective").value.trim();
+      p.cause = (document.getElementById("cause").value==="Selecione…") ? "" : document.getElementById("cause").value;
+      p.frequency = document.getElementById("frequency").value;
+      p.targetAudience = (document.getElementById("audience").value==="Selecione…") ? "" : document.getElementById("audience").value;
+      p.volunteersInvolved = document.getElementById("volunteersInvolved").value;
+      p.notes = document.getElementById("notes").value.trim();
+      p.activitiesCount = clampInt(document.getElementById("activitiesCount").value, 0, 200);
+      p.onlineCampaignsCount = clampInt(document.getElementById("onlineCampaignsCount").value, 0, 200);
+    }
+
+    function renderContact(){
+      const page = 3 + state.projects.length;
+
+      app.innerHTML = `
+        <div class="title">Responsável pelo preenchimento</div>
+        <p class="muted">Informe os dados da pessoa responsável pelo preenchimento deste formulário.</p>
+
+        <div class="q">
+          <div class="qnum">${qNum(page,1)}</div>
+          <div class="qbody">
+            <label id="lbl_contactName">Nome</label>
+            <input id="contactName" type="text" placeholder="Nome completo" value="${escapeHtml(state.contactName)}" />
+            <div class="err" id="err_contactName" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="q">
+          <div class="qnum">${qNum(page,2)}</div>
+          <div class="qbody">
+            <label id="lbl_contactPhone">Telefone</label>
+            <input id="contactPhone" type="tel" placeholder="Ex: (11) 99999-9999" value="${escapeHtml(state.contactPhone)}" />
+            <div class="err" id="err_contactPhone" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="q">
+          <div class="qnum">${qNum(page,3)}</div>
+          <div class="qbody">
+            <label id="lbl_contactEmail">E-mail</label>
+            <input id="contactEmail" type="email" placeholder="exemplo@dominio.com" value="${escapeHtml(state.contactEmail)}" />
+            <div class="err" id="err_contactEmail" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button id="back">Voltar</button>
+          <button class="primary" id="next">Revisar e enviar</button>
+        </div>
+      `;
+
+      document.getElementById("back").onclick = () => {
+        state.stepIndex = 2 + state.projects.length - 1;
+        render();
+      };
+
+      document.getElementById("next").onclick = () => {
+        clearErrors_();
+
+        const name = document.getElementById("contactName").value.trim();
+        const phone = document.getElementById("contactPhone").value.trim();
+        const email = document.getElementById("contactEmail").value.trim();
+
+        let ok = true;
+        if (!name) { ok = false; setFieldError_("contactName", "Preencha o nome do responsável."); }
+        if (!phone) { ok = false; setFieldError_("contactPhone", "Preencha o telefone do responsável."); }
+        if (!email) { ok = false; setFieldError_("contactEmail", "Preencha o e-mail do responsável."); }
+
+        if (!ok) return;
+
+        state.contactName = name;
+        state.contactPhone = phone;
+        state.contactEmail = email;
+
+        const lastProjectStep = 2 + state.projects.length - 1;
+        state.stepIndex = lastProjectStep + 2;
+        render();
+      };
+    }
+
+    function renderReview(){
+      const page = 4 + state.projects.length;
+
+      const rows = state.projects.map(p => `
+        <tr>
+          <td>${escapeHtml(p.title)}</td>
+          <td>${escapeHtml(p.cause)}</td>
+          <td>${escapeHtml(p.frequency)}</td>
+          <td>${escapeHtml(p.targetAudience)}</td>
+          <td>${escapeHtml((p.partnerNuclei||[]).join(", "))}</td>
+          <td>${escapeHtml(p.volunteersInvolved)}</td>
+          <td>${escapeHtml(p.activitiesCount)}</td>
+          <td>${escapeHtml(p.onlineCampaignsCount)}</td>
+        </tr>
+      `).join("");
+
+      app.innerHTML = `
+        <div class="title">Revisão</div>
+        <p class="muted">Ao enviar, cada projeto vira 1 linha no Google Sheets. Arquivos viram links do Drive.</p>
+
+        <div class="muted"><b>Núcleo responsável pela iniciativa:</b> ${escapeHtml(state.nucleus)}</div>
+        <div class="muted"><b>Responsável:</b> ${escapeHtml(state.contactName)} • ${escapeHtml(state.contactPhone)} • ${escapeHtml(state.contactEmail)}</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Projeto</th>
+              <th>Causa</th>
+              <th>Frequência</th>
+              <th>Público-alvo</th>
+              <th>Núcleos participantes</th>
+              <th>Voluntárias envolvidas</th>
+              <th>Atividades</th>
+              <th>Campanhas online</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+
+        <div class="buttons">
+          <button id="back">Voltar</button>
+          <button class="primary" id="submit">Enviar</button>
+        </div>
+
+        <div id="status" class="muted" style="margin-top:10px;"></div>
+      `;
+
+      document.getElementById("back").onclick = () => {
+        const lastProjectStep = 2 + state.projects.length - 1;
+        state.stepIndex = lastProjectStep + 1;
+        render();
+      };
+
+      document.getElementById("submit").onclick = async () => {
+        const status = document.getElementById("status");
+        status.textContent = "Enviando…";
+
+        try{
+          const payload = {
+            nucleus: state.nucleus,
+            contact: { name: state.contactName, phone: state.contactPhone, email: state.contactEmail },
+            projects: state.projects
+          };
+
+          const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
+          });
+
+          const out = await res.json();
+          if (!out.ok) throw new Error(out.error || "Falha desconhecida");
+
+          status.textContent = "Enviado ✅";
+          alert("Tudo certo. Respostas gravadas no Sheets.");
+        } catch(e){
+          status.textContent = "Erro ao enviar: " + e.message;
+          alert("Erro ao enviar: " + e.message);
+        }
+      };
+    }
+
+    // ---------- validação visual ----------
+    function setFieldError_(key, msg){
+      const map = {
+        nucleus: ["nucleus", "lbl_nucleus", "err_nucleus"],
+        titles: ["titles", null, "err_titles"],
+        objective: ["objective", "lbl_objective", "err_objective"],
+        cause: ["cause", "lbl_cause", "err_cause"],
+        frequency: ["frequency", "lbl_frequency", "err_frequency"],
+        audience: ["audience", "lbl_audience", "err_audience"],
+        volunteers: ["volunteersInvolved", "lbl_volunteers", "err_volunteers"],
+        activitiesCount: ["activitiesCount", "lbl_activitiesCount", "err_activitiesCount"],
+        onlineCampaignsCount: ["onlineCampaignsCount", "lbl_onlineCampaignsCount", "err_onlineCampaignsCount"],
+        contactName: ["contactName", "lbl_contactName", "err_contactName"],
+        contactPhone: ["contactPhone", "lbl_contactPhone", "err_contactPhone"],
+        contactEmail: ["contactEmail", "lbl_contactEmail", "err_contactEmail"]
+      };
+
+      const cfg = map[key];
+      if (!cfg) return;
+
+      const [inputId, labelId, errId] = cfg;
+      const el = document.getElementById(inputId);
+      const err = document.getElementById(errId);
+
+      if (el) el.classList.add("invalid");
+      if (err){
+        err.textContent = msg;
+        err.style.display = "block";
+      }
+      if (labelId){
+        const lbl = document.getElementById(labelId);
+        if (lbl && !lbl.dataset.starred){
+          lbl.dataset.starred = "1";
+          lbl.innerHTML = `${escapeHtml(lbl.textContent)}<span class="reqStar">*</span>`;
+        }
+      }
+      if (el) el.scrollIntoView({ behavior:"smooth", block:"center" });
+    }
+
+    function clearErrors_(){
+      document.querySelectorAll(".invalid").forEach(x => x.classList.remove("invalid"));
+      document.querySelectorAll(".err").forEach(x => { x.style.display="none"; x.textContent=""; });
+      document.querySelectorAll("label[data-starred]").forEach(lbl => {
+        lbl.dataset.starred = "";
+        lbl.textContent = lbl.textContent.replace("*","").trim();
+      });
+    }
+
+    // ---------- helpers ----------
+    function clampInt(v, min, max){
+      const n = Number.parseInt(v, 10);
+      if (Number.isNaN(n)) return min;
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    render();
+  </script>
+</body>
+</html>
