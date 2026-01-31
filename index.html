@@ -1266,16 +1266,19 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
       document.getElementById("submit").onclick = async () => {
         const status = document.getElementById("status");
+        const btn = document.getElementById("submit");
         status.textContent = "Enviando…";
+        btn.disabled = true;
 
-        // garante autosave final antes do submit
-        debounceAutosave_("final_before_submit", {});
+        // ✅ GARANTE autosave final (sem debounce)
+        await autosave_("final_before_submit", { source: "submit_button" });
 
         try{
           // se WEB_APP_URL não for configurado, considera como "sem submit final"
           if (!WEB_APP_URL || WEB_APP_URL === "YOUR_WEB_APP_URL_HERE") {
             status.textContent = "Sem envio final configurado. O rascunho já foi salvo ✅";
             alert("Sem envio final configurado. O rascunho já foi salvo.");
+            btn.disabled = false;
             return;
           }
 
@@ -1296,9 +1299,11 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
           status.textContent = "Enviado ✅";
           alert("Tudo certo. Respostas enviadas.");
+          btn.disabled = false;
         } catch(e){
           status.textContent = "Erro ao enviar: " + e.message;
           alert("Erro ao enviar: " + e.message);
+          btn.disabled = false;
         }
       };
     }
