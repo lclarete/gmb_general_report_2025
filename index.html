@@ -652,7 +652,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     }
 
     function renderList(){
-      const page = 2;
+      const page = 1; // ✅ antes era 2
 
       app.innerHTML = `
         <div class="title">Lista de projetos</div>
@@ -741,7 +741,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     function renderProject(i){
       const p = state.projects[i];
       const n = state.projects.length;
-      const page = 3 + i;
+      const page = 2 + i; // ✅ antes era 3 + i
 
       app.innerHTML = `
         <div class="title">Vamos falar sobre: ${escapeHtml(p.title)}</div>
@@ -1168,7 +1168,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     }
 
     function renderContact(){
-      const page = 3 + state.projects.length;
+      const page = 2 + state.projects.length; // ✅ antes era 3 + state.projects.length
 
       app.innerHTML = `
         <div class="title">Responsável pelo preenchimento</div>
