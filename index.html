@@ -21,13 +21,13 @@
       --blockBorderA: rgba(42,167,179,0.35);
       --blockBorderB: rgba(11,43,77,0.22);
 
-      /* radius menores */
-      --r-card: 5px;
-      --r-input: 5px;
-      --r-btn: 5px;
-      --r-pillbox: 5px;
-      --r-qnum: 5px;
-      --r-block: 5px;
+      /* border radius menores */
+      --r-card: 10px;
+      --r-input: 8px;
+      --r-btn: 9px;
+      --r-pillbox: 10px;
+      --r-qnum: 8px;
+      --r-block: 12px;
     }
 
     body{
@@ -80,7 +80,7 @@
     }
 
     .qnum{
-      min-width: 48px;
+      min-width: 52px;
       height: 34px;
       border-radius: var(--r-qnum);
       background: rgba(11,43,77,0.08);
@@ -273,6 +273,8 @@
       width: 260px;
       max-width: 70%;
       height: auto;
+      border-radius: 8px;
+      border: 1px solid rgba(0,0,0,0.06);
     }
 
     .introText{
@@ -307,9 +309,25 @@
   </div>
 
   <script>
+    // ----------- ENDPOINTS / LINKS -----------
+    // Autosave (Cloudflare Worker) — usa exatamente o fetch que você mandou
+    const AUTOSAVE_URL = "https://sheet-proxy.your-subdomain.workers.dev";
+
+    // Submit final (opcional). Se você não quiser mais submit final, pode deixar vazio.
     const WEB_APP_URL = "YOUR_WEB_APP_URL_HERE";
+
+    // Logo do Grupo (se vazio, renderiza placeholder)
     const LOGO_SRC = "LOGO_URL_AQUI";
+
+    // Guia
     const GUIDE_URL = "GUIA_URL_AQUI";
+
+    // Placeholder para logo (quando LOGO_SRC não estiver configurado)
+    const DEFAULT_LOGO_PLACEHOLDER =
+      "https://raw.githubusercontent.com/lclarete/gmb_general_report_2025/refs/heads/main/GMB_Logo.png";
+
+    // Rascunho local
+    const DRAFT_STORAGE_KEY = "gmb_2025_form_draft_v1";
 
     const INTRO_TEXT = `Olá!
 
@@ -391,6 +409,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       { value: "estimativa_nao_estruturada", label: "Estimativa não estruturada (percepção pessoal ou da equipe organizadora)" }
     ];
 
+    // Núcleos (lista)
     const NUCLEUS_RAW = [
       "Algarve (ID_001)","Ananindeua (ID_162)","Anápolis (ID_002)","Aracaju (ID_003)","Araçuaí (ID_004)","Arapiraca (ID_005)",
       "Araraquara (ID_006)","Araras (ID_163)","Atlanta (ID_007)","Balneário (ID_008)","Barcarena (ID_009)","Barcelona (ID_010)",
@@ -421,6 +440,12 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       "Vietnã (ID_149)","Vitória (ID_150)","Volta Redonda (ID_151)","Washington, D.C. (ID_152)","Wolfsburg (ID_153)","Açailândia (ID_174)"
     ];
 
+    function buildOptions_(arr){
+      const cleaned = arr.map(s => String(s||"").trim()).filter(Boolean);
+      const set = new Set(cleaned);
+      const list = Array.from(set).sort((a,b)=>a.localeCompare(b));
+      return ["Selecione…", ...list];
+    }
     const NUCLEUS_OPTIONS = buildOptions_(NUCLEUS_RAW);
 
     const state = {
@@ -434,13 +459,104 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
     const app = document.getElementById("app");
 
-    function buildOptions_(arr){
-      const cleaned = arr.map(s => String(s||"").trim()).filter(Boolean);
-      const set = new Set(cleaned);
-      const list = Array.from(set).sort((a,b)=>a.localeCompare(b));
-      return ["Selecione…", ...list];
+    // ---------------- AUTOSAVE ----------------
+    let autosaveTimer = null;
+    let lastAutosaveAt = 0;
+
+    function getDraftId_(){
+      let id = localStorage.getItem(DRAFT_STORAGE_KEY + "_id");
+      if (!id) {
+        id = "draft_" + Math.random().toString(36).slice(2) + "_" + Date.now();
+        localStorage.setItem(DRAFT_STORAGE_KEY + "_id", id);
+      }
+      return id;
     }
 
+    function persistLocalDraft_(){
+      try{
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
+          version: 1,
+          savedAt: new Date().toISOString(),
+          state
+        }));
+      }catch(e){}
+    }
+
+    function tryRestoreLocalDraft_(){
+      try{
+        const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+        if (!raw) return false;
+        const obj = JSON.parse(raw);
+        if (!obj || !obj.state) return false;
+
+        Object.assign(state, obj.state);
+        state.projects = Array.isArray(state.projects) ? state.projects : [];
+        state.stepIndex = Number.isFinite(state.stepIndex) ? state.stepIndex : 0;
+
+        return true;
+      }catch(e){
+        return false;
+      }
+    }
+
+    function debounceAutosave_(reason, meta){
+      persistLocalDraft_();
+      clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(() => autosave_(reason, meta), 700);
+    }
+
+    async function autosave_(reason, meta){
+      const now = Date.now();
+      if (now - lastAutosaveAt < 350) return;
+      lastAutosaveAt = now;
+
+      // Usa exatamente o fetch que você mandou, só que com payload completo
+      try{
+        await fetch(AUTOSAVE_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            field1: "Hello",
+            field2: "World",
+            payload: {
+              kind: "draft_autosave",
+              draftId: getDraftId_(),
+              savedAt: new Date().toISOString(),
+              reason: reason || "unknown",
+              meta: meta || {},
+              data: {
+                nucleus: state.nucleus,
+                contact: { name: state.contactName, phone: state.contactPhone, email: state.contactEmail },
+                projects: state.projects,
+                stepIndex: state.stepIndex
+              }
+            }
+          }),
+          headers: { "Content-Type": "application/json" }
+        });
+
+        const status = document.getElementById("status");
+        if (status) status.textContent = "Rascunho salvo ✅";
+      }catch(e){
+        const status = document.getElementById("status");
+        if (status) status.textContent = "Falha ao salvar rascunho (tentará novamente)";
+      }
+    }
+
+    // dispara autosave para qualquer edição em input/textarea/select
+    document.addEventListener("input", (ev) => {
+      const t = ev.target;
+      if (!t) return;
+      if (t.matches("input, textarea, select")) {
+        debounceAutosave_("field_input", { id: t.id || null, name: t.name || null, type: t.type || null });
+      }
+    }, true);
+
+    // salva ao sair
+    window.addEventListener("beforeunload", () => {
+      persistLocalDraft_();
+    });
+
+    // ---------------- UI / FLOW ----------------
     function qNum(page, q){
       return `${page}.${q}`;
     }
@@ -471,12 +587,11 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       const parts = INTRO_TEXT.split(guideLine);
 
       const page = 1;
+      const logoToUse = (LOGO_SRC && LOGO_SRC !== "LOGO_URL_AQUI") ? LOGO_SRC : DEFAULT_LOGO_PLACEHOLDER;
 
       app.innerHTML = `
         <div class="introHeader">
-          ${LOGO_SRC && LOGO_SRC !== "LOGO_URL_AQUI"
-            ? `<img class="logo" src="${escapeHtml(LOGO_SRC)}" alt="Grupo Mulheres do Brasil" />`
-            : `<div class="muted" style="margin:0;">(Logo: cole a URL pública em LOGO_SRC)</div>`}
+          <img class="logo" src="${escapeHtml(logoToUse)}" alt="Grupo Mulheres do Brasil" />
         </div>
 
         <div class="introText">${escapeHtml(parts[0] || "")}</div>
@@ -493,7 +608,11 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           <button class="primary" id="start">Continuar</button>
         </div>
       `;
-      document.getElementById("start").onclick = () => { state.stepIndex = 1; render(); };
+      document.getElementById("start").onclick = () => {
+        state.stepIndex = 1;
+        debounceAutosave_("page_change", { toStep: state.stepIndex });
+        render();
+      };
     }
 
     function renderList(){
@@ -531,7 +650,14 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       const sel = document.getElementById("nucleus");
       sel.innerHTML = NUCLEUS_OPTIONS.map(x => `<option value="${escapeHtml(x)}" ${(state.nucleus===x)?"selected":""}>${escapeHtml(x)}</option>`).join("");
 
-      document.getElementById("back").onclick = () => { state.stepIndex = 0; render(); };
+      const titlesEl = document.getElementById("titles");
+      titlesEl.value = state.projects.length ? state.projects.map(p=>p.title).join("\n") : "";
+
+      document.getElementById("back").onclick = () => {
+        state.stepIndex = 0;
+        debounceAutosave_("page_change", { toStep: state.stepIndex });
+        render();
+      };
 
       document.getElementById("go").onclick = () => {
         clearErrors_();
@@ -543,7 +669,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         }
         state.nucleus = nucleusSel;
 
-        const raw = document.getElementById("titles").value;
+        const raw = titlesEl.value;
         const titles = raw.split("\n").map(s => s.trim()).filter(Boolean);
 
         if (titles.length === 0) {
@@ -551,30 +677,28 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           return;
         }
 
-        state.projects = titles.map(t => ({
+        // preserva o que já existe, se possível
+        const existingMap = new Map(state.projects.map(p => [p.title, p]));
+        state.projects = titles.map(t => existingMap.get(t) || ({
           title: t,
           objective: "",
           cause: "",
           frequency: "",
           targetAudience: "",
-
           partnerNuclei: [],
           volunteersInvolved: "",
-
           activitiesCount: 0,
           activities: [],
-
           onlineCampaignsCount: 0,
           onlineCampaigns: [],
-
           supportReceived: [],
           notes: "",
-
           representativePhotoFiles: [],
           supportMaterialFiles: []
         }));
 
         state.stepIndex = 2;
+        debounceAutosave_("page_change", { toStep: state.stepIndex });
         render();
       };
     }
@@ -582,8 +706,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     function renderProject(i){
       const p = state.projects[i];
       const n = state.projects.length;
-
-      // Página dinâmica: a partir da 3
       const page = 3 + i;
 
       app.innerHTML = `
@@ -765,6 +887,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           } else {
             p.partnerNuclei = p.partnerNuclei.filter(x => x !== name);
           }
+          debounceAutosave_("partner_change", { projectIndex: i });
         };
       });
 
@@ -786,6 +909,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           } else {
             p.supportReceived = p.supportReceived.filter(x => x !== key);
           }
+          debounceAutosave_("support_change", { projectIndex: i });
         };
       });
 
@@ -843,24 +967,24 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         `;
 
         activitiesArea.querySelectorAll("input[data-a-date]").forEach(inp => {
-          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-date"))].date = inp.value; };
+          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-date"))].date = inp.value; debounceAutosave_("activity_edit", { projectIndex:i }); };
         });
         activitiesArea.querySelectorAll("input[data-a-enrolled]").forEach(inp => {
-          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-enrolled"))].enrolled = inp.value; };
+          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-enrolled"))].enrolled = inp.value; debounceAutosave_("activity_edit", { projectIndex:i }); };
         });
         activitiesArea.querySelectorAll("input[data-a-participants]").forEach(inp => {
-          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-participants"))].participants = inp.value; };
+          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-participants"))].participants = inp.value; debounceAutosave_("activity_edit", { projectIndex:i }); };
         });
         activitiesArea.querySelectorAll("select[data-a-format]").forEach(sel => {
-          sel.onchange = () => { p.activities[Number(sel.getAttribute("data-a-format"))].format = sel.value; };
+          sel.onchange = () => { p.activities[Number(sel.getAttribute("data-a-format"))].format = sel.value; debounceAutosave_("activity_edit", { projectIndex:i }); };
         });
         activitiesArea.querySelectorAll("select[data-a-record]").forEach(sel => {
-          sel.onchange = () => { p.activities[Number(sel.getAttribute("data-a-record"))].participantRecord = sel.value; };
+          sel.onchange = () => { p.activities[Number(sel.getAttribute("data-a-record"))].participantRecord = sel.value; debounceAutosave_("activity_edit", { projectIndex:i }); };
         });
       }
 
       drawActivitiesRows();
-      activitiesInput.oninput = drawActivitiesRows;
+      activitiesInput.oninput = () => { drawActivitiesRows(); debounceAutosave_("activities_count_change", { projectIndex:i }); };
 
       // campanhas online
       const campaignsArea = document.getElementById("campaignsArea");
@@ -908,28 +1032,48 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         `;
 
         campaignsArea.querySelectorAll("input[data-c-date]").forEach(inp => {
-          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-date"))].date = inp.value; };
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-date"))].date = inp.value; debounceAutosave_("campaign_edit", { projectIndex:i }); };
         });
         campaignsArea.querySelectorAll("input[data-c-name]").forEach(inp => {
-          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-name"))].name = inp.value; };
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-name"))].name = inp.value; debounceAutosave_("campaign_edit", { projectIndex:i }); };
         });
         campaignsArea.querySelectorAll("input[data-c-posts]").forEach(inp => {
-          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-posts"))].posts = inp.value; };
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-posts"))].posts = inp.value; debounceAutosave_("campaign_edit", { projectIndex:i }); };
         });
         campaignsArea.querySelectorAll("input[data-c-views]").forEach(inp => {
-          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-views"))].views = inp.value; };
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-views"))].views = inp.value; debounceAutosave_("campaign_edit", { projectIndex:i }); };
         });
         campaignsArea.querySelectorAll("input[data-c-interactions]").forEach(inp => {
-          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-interactions"))].interactions = inp.value; };
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-interactions"))].interactions = inp.value; debounceAutosave_("campaign_edit", { projectIndex:i }); };
         });
       }
 
       drawCampaignRows();
-      campaignsInput.oninput = drawCampaignRows;
+      campaignsInput.oninput = () => { drawCampaignRows(); debounceAutosave_("campaigns_count_change", { projectIndex:i }); };
+
+      // arquivos (nota: sem backend de upload aqui, então só guardamos nomes localmente)
+      const repPhoto = document.getElementById("repPhoto");
+      const repPhotoStatus = document.getElementById("repPhotoStatus");
+      repPhoto.onchange = () => {
+        const files = Array.from(repPhoto.files || []);
+        p.representativePhotoFiles = files.map(f => ({ name: f.name, size: f.size, type: f.type }));
+        repPhotoStatus.textContent = files.length ? `Selecionado: ${files[0].name}` : "";
+        debounceAutosave_("file_select", { projectIndex:i, kind:"representativePhoto" });
+      };
+
+      const supportFiles = document.getElementById("supportFiles");
+      const supportFilesStatus = document.getElementById("supportFilesStatus");
+      supportFiles.onchange = () => {
+        const files = Array.from(supportFiles.files || []);
+        p.supportMaterialFiles = files.map(f => ({ name: f.name, size: f.size, type: f.type }));
+        supportFilesStatus.textContent = files.length ? `${files.length} arquivo(s) selecionado(s)` : "";
+        debounceAutosave_("file_select", { projectIndex:i, kind:"supportFiles" });
+      };
 
       document.getElementById("back").onclick = () => {
         saveProject(i);
         state.stepIndex = Math.max(1, state.stepIndex - 1);
+        debounceAutosave_("page_change", { toStep: state.stepIndex, projectIndex: i });
         render();
       };
 
@@ -940,9 +1084,9 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         let ok = true;
 
         if (!p.objective.trim()) { ok = false; setFieldError_("objective", "Preencha o objetivo da iniciativa."); }
-        if (!p.cause) { ok = false; setFieldError_("cause", "Selecione a causa."); }
+        if (!p.cause || p.cause === "Selecione…") { ok = false; setFieldError_("cause", "Selecione a causa."); }
         if (!p.frequency) { ok = false; setFieldError_("frequency", "Selecione a frequência."); }
-        if (!p.targetAudience) { ok = false; setFieldError_("audience", "Selecione o público-alvo."); }
+        if (!p.targetAudience || p.targetAudience === "Selecione…") { ok = false; setFieldError_("audience", "Selecione o público-alvo."); }
         if (p.volunteersInvolved === "" || p.volunteersInvolved === null) { ok = false; setFieldError_("volunteers", "Preencha o número de voluntárias envolvidas."); }
 
         if (p.activitiesCount > 0) {
@@ -976,6 +1120,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         if (state.stepIndex === lastProjectStep) state.stepIndex = lastProjectStep + 1;
         else state.stepIndex += 1;
 
+        debounceAutosave_("page_change", { toStep: state.stepIndex, projectIndex: i });
         render();
       };
     }
@@ -1034,6 +1179,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
       document.getElementById("back").onclick = () => {
         state.stepIndex = 2 + state.projects.length - 1;
+        debounceAutosave_("page_change", { toStep: state.stepIndex });
         render();
       };
 
@@ -1057,6 +1203,8 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
         const lastProjectStep = 2 + state.projects.length - 1;
         state.stepIndex = lastProjectStep + 2;
+
+        debounceAutosave_("page_change", { toStep: state.stepIndex });
         render();
       };
     }
@@ -1079,7 +1227,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
       app.innerHTML = `
         <div class="title">Revisão</div>
-        <p class="muted">Ao enviar, cada projeto vira 1 linha no Google Sheets. Arquivos viram links do Drive.</p>
+        <p class="muted">O formulário salva automaticamente enquanto você preenche. Você pode fechar e voltar depois.</p>
 
         <div class="muted"><b>Núcleo responsável pela iniciativa:</b> ${escapeHtml(state.nucleus)}</div>
         <div class="muted"><b>Responsável:</b> ${escapeHtml(state.contactName)} • ${escapeHtml(state.contactPhone)} • ${escapeHtml(state.contactEmail)}</div>
@@ -1111,6 +1259,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       document.getElementById("back").onclick = () => {
         const lastProjectStep = 2 + state.projects.length - 1;
         state.stepIndex = lastProjectStep + 1;
+        debounceAutosave_("page_change", { toStep: state.stepIndex });
         render();
       };
 
@@ -1118,7 +1267,17 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         const status = document.getElementById("status");
         status.textContent = "Enviando…";
 
+        // garante autosave final antes do submit
+        debounceAutosave_("final_before_submit", {});
+
         try{
+          // se WEB_APP_URL não for configurado, considera como "sem submit final"
+          if (!WEB_APP_URL || WEB_APP_URL === "YOUR_WEB_APP_URL_HERE") {
+            status.textContent = "Sem envio final configurado. O rascunho já foi salvo ✅";
+            alert("Sem envio final configurado. O rascunho já foi salvo.");
+            return;
+          }
+
           const payload = {
             nucleus: state.nucleus,
             contact: { name: state.contactName, phone: state.contactPhone, email: state.contactEmail },
@@ -1135,7 +1294,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           if (!out.ok) throw new Error(out.error || "Falha desconhecida");
 
           status.textContent = "Enviado ✅";
-          alert("Tudo certo. Respostas gravadas no Sheets.");
+          alert("Tudo certo. Respostas enviadas.");
         } catch(e){
           status.textContent = "Erro ao enviar: " + e.message;
           alert("Erro ao enviar: " + e.message);
@@ -1185,10 +1344,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     function clearErrors_(){
       document.querySelectorAll(".invalid").forEach(x => x.classList.remove("invalid"));
       document.querySelectorAll(".err").forEach(x => { x.style.display="none"; x.textContent=""; });
-      document.querySelectorAll("label[data-starred]").forEach(lbl => {
-        lbl.dataset.starred = "";
-        lbl.textContent = lbl.textContent.replace("*","").trim();
-      });
     }
 
     // ---------- helpers ----------
@@ -1207,7 +1362,11 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         .replaceAll("'", "&#039;");
     }
 
+    // ----------- INIT -----------
+    // restaura rascunho local e já dispara autosave "open"
+    tryRestoreLocalDraft_();
     render();
+    debounceAutosave_("open_form", { restored: true });
   </script>
 </body>
 </html>
