@@ -2,16 +2,15 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Uploader</title>
+    <title>Upload a file to Drive</title>
     <style>
-      body { font-family: Arial, sans-serif; padding: 20px; }
+      body { font-family: Arial, sans-serif; padding: 24px; }
       .row { margin: 12px 0; }
-      button { padding: 10px 14px; cursor: pointer; }
-      #status { margin-top: 14px; white-space: pre-wrap; }
-      input[type="file"] { width: 100%; }
+      .status { margin-top: 16px; white-space: pre-wrap; }
+      button { padding: 10px 14px; }
     </style>
   </head>
+
   <body>
     <h2>Upload a file to Drive</h2>
 
@@ -20,65 +19,74 @@
     </div>
 
     <div class="row">
-      <button id="btn" type="button" onclick="handleUpload()">Upload</button>
+      <button id="btn">Upload</button>
     </div>
 
-    <div id="status"></div>
+    <div class="status" id="status"></div>
 
     <script>
-      function setStatus(msg) {
-        document.getElementById("status").textContent = msg;
-      }
+      // Your Web App URL (kept here so this page ALSO works if you host it elsewhere)
+      const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzoGep9hpdil9E3H8YAjIh7P4Zs0mV-_MuFZPXOe2SuqXiU9VlCNKlWS2rc8cyqIAyIEg/exec";
 
-      async function handleUpload() {
-        const input = document.getElementById("file");
-        const btn = document.getElementById("btn");
+      const $file = document.getElementById("file");
+      const $btn = document.getElementById("btn");
+      const $status = document.getElementById("status");
 
-        if (!input.files || !input.files[0]) {
-          setStatus("Pick a file first.");
-          return;
-        }
+      function setStatus(msg) { $status.textContent = msg; }
 
-        const f = input.files[0];
-        btn.disabled = true;
-        btn.textContent = "Uploading...";
-        setStatus("");
-
-        try {
-          const dataUrl = await fileToDataUrl(f);
-
-          google.script.run
-            .withSuccessHandler((res) => {
-              btn.disabled = false;
-              btn.textContent = "Upload";
-              setStatus(
-                "Uploaded ✅\n" +
-                "Name: " + res.name + "\n" +
-                "URL: " + res.url + "\n" +
-                "FileId: " + res.fileId
-              );
-            })
-            .withFailureHandler((err) => {
-              btn.disabled = false;
-              btn.textContent = "Upload";
-              setStatus("Upload failed ❌\n" + (err && err.message ? err.message : String(err)));
-            })
-            .uploadFile_(dataUrl, f.name, f.type);
-        } catch (e) {
-          btn.disabled = false;
-          btn.textContent = "Upload";
-          setStatus("Upload failed ❌\n" + String(e));
-        }
-      }
-
-      function fileToDataUrl(file) {
+      function readAsDataUrl(file) {
         return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(reader.error || new Error("FileReader failed"));
-          reader.readAsDataURL(file);
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = () => reject(r.error || new Error("FileReader failed"));
+          r.readAsDataURL(file);
         });
       }
+
+      async function uploadViaFetch(dataUrl, filename, mimeType) {
+        const res = await fetch(WEB_APP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dataUrl, filename, mimeType })
+        });
+        return await res.json();
+      }
+
+      function uploadViaGoogleScriptRun(dataUrl, filename, mimeType) {
+        return new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(err => reject(err))
+            .uploadFile_(dataUrl, filename, mimeType);
+        });
+      }
+
+      $btn.addEventListener("click", async () => {
+        try {
+          const file = $file.files && $file.files[0];
+          if (!file) { setStatus("Pick a file first."); return; }
+
+          setStatus("Reading file…");
+          const dataUrl = await readAsDataUrl(file);
+
+          setStatus("Uploading…");
+
+          let out;
+          // If running INSIDE Apps Script web app, use google.script.run
+          if (typeof google !== "undefined" && google.script && google.script.run) {
+            out = await uploadViaGoogleScriptRun(dataUrl, file.name, file.type);
+          } else {
+            // If running OUTSIDE (Cloudflare/local/etc), use fetch to /exec
+            out = await uploadViaFetch(dataUrl, file.name, file.type);
+          }
+
+          if (!out || !out.ok) throw new Error(out && out.error ? out.error : "Upload failed");
+
+          setStatus("Upload successful ✅\n" + out.name + "\n" + out.url);
+        } catch (err) {
+          setStatus("Upload failed ❌\n" + (err && err.message ? err.message : String(err)));
+        }
+      });
     </script>
   </body>
 </html>
