@@ -590,6 +590,50 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       persistLocalDraft_();
     });
 
+    // ---------------- FILE UPLOAD HELPERS (Drive via Apps Script) ----------------
+    // IMPORTANT: your Apps Script expects file objects to include `dataUrl` or `base64`.
+    // This section makes sure we store that in state.projects[*].representativePhotoFiles/supportMaterialFiles.
+
+    const MAX_FILE_BYTES = 7 * 1024 * 1024; // 7MB safety (base64 grows ~33%)
+
+    function fileToDataUrl_(file){
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onerror = () => reject(r.error);
+        r.onload = () => resolve(String(r.result || ""));
+        r.readAsDataURL(file);
+      });
+    }
+
+    async function normalizeSelectedFiles_(files, { kind, projectIndex, maxCount, acceptImagesOnly }){
+      const list = Array.from(files || []);
+      const sliced = list.slice(0, maxCount);
+
+      for (const f of sliced){
+        if (f.size > MAX_FILE_BYTES){
+          throw new Error(`Arquivo muito grande: ${f.name}. Limite ~${Math.floor(MAX_FILE_BYTES/1024/1024)}MB.`);
+        }
+        if (acceptImagesOnly && !(f.type || "").startsWith("image/")){
+          throw new Error(`Arquivo inválido: ${f.name}. Aceita apenas imagens.`);
+        }
+      }
+
+      const out = [];
+      for (const f of sliced){
+        const dataUrl = await fileToDataUrl_(f);
+        out.push({
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          mimeType: f.type || "application/octet-stream",
+          dataUrl,                // ✅ this is the key for Drive saving
+          kind,
+          projectIndex
+        });
+      }
+      return out;
+    }
+
     // ---------------- UI / FLOW ----------------
     function qNum(page, q){
       return `${page}.${q}`;
@@ -1082,23 +1126,84 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       drawCampaignRows();
       campaignsInput.oninput = () => { drawCampaignRows(); debounceAutosave_("campaigns_count_change", { projectIndex:i }); };
 
+      // ---------------- FILE INPUTS (UPDATED: stores dataUrl in state) ----------------
       const repPhoto = document.getElementById("repPhoto");
       const repPhotoStatus = document.getElementById("repPhotoStatus");
-      repPhoto.onchange = () => {
-        const files = Array.from(repPhoto.files || []);
-        p.representativePhotoFiles = files.map(f => ({ name: f.name, size: f.size, type: f.type }));
-        repPhotoStatus.textContent = files.length ? `Selecionado: ${files[0].name}` : "";
-        debounceAutosave_("file_select", { projectIndex:i, kind:"representativePhoto" });
+
+      repPhoto.onchange = async () => {
+        try{
+          const files = repPhoto.files || [];
+          if (!files.length){
+            p.representativePhotoFiles = [];
+            repPhotoStatus.textContent = "";
+            debounceAutosave_("file_select", { projectIndex:i, kind:"representativePhoto" });
+            return;
+          }
+
+          repPhotoStatus.textContent = "Lendo arquivo…";
+
+          const enriched = await normalizeSelectedFiles_(files, {
+            kind: "representativePhoto",
+            projectIndex: i,
+            maxCount: 1,
+            acceptImagesOnly: true
+          });
+
+          p.representativePhotoFiles = enriched;
+          repPhotoStatus.textContent = `Selecionado: ${enriched[0].name}`;
+
+          debounceAutosave_("file_select", { projectIndex:i, kind:"representativePhoto" });
+
+        } catch(e){
+          p.representativePhotoFiles = [];
+          repPhoto.value = "";
+          repPhotoStatus.textContent = "";
+          alert(e.message || String(e));
+        }
       };
 
       const supportFiles = document.getElementById("supportFiles");
       const supportFilesStatus = document.getElementById("supportFilesStatus");
-      supportFiles.onchange = () => {
-        const files = Array.from(supportFiles.files || []);
-        p.supportMaterialFiles = files.map(f => ({ name: f.name, size: f.size, type: f.type }));
-        supportFilesStatus.textContent = files.length ? `${files.length} arquivo(s) selecionado(s)` : "";
-        debounceAutosave_("file_select", { projectIndex:i, kind:"supportFiles" });
+
+      supportFiles.onchange = async () => {
+        try{
+          const files = supportFiles.files || [];
+          if (!files.length){
+            p.supportMaterialFiles = [];
+            supportFilesStatus.textContent = "";
+            debounceAutosave_("file_select", { projectIndex:i, kind:"supportMaterial" });
+            return;
+          }
+
+          supportFilesStatus.textContent = "Lendo arquivos…";
+
+          const enriched = await normalizeSelectedFiles_(files, {
+            kind: "supportMaterial",
+            projectIndex: i,
+            maxCount: 5,
+            acceptImagesOnly: false
+          });
+
+          p.supportMaterialFiles = enriched;
+          supportFilesStatus.textContent = `${enriched.length} arquivo(s) pronto(s) para envio ✅`;
+
+          debounceAutosave_("file_select", { projectIndex:i, kind:"supportMaterial" });
+
+        } catch(e){
+          p.supportMaterialFiles = [];
+          supportFiles.value = "";
+          supportFilesStatus.textContent = "";
+          alert(e.message || String(e));
+        }
       };
+
+      // Show existing selection (if draft restored)
+      if (Array.isArray(p.representativePhotoFiles) && p.representativePhotoFiles.length){
+        repPhotoStatus.textContent = `Selecionado: ${p.representativePhotoFiles[0].name}`;
+      }
+      if (Array.isArray(p.supportMaterialFiles) && p.supportMaterialFiles.length){
+        supportFilesStatus.textContent = `${p.supportMaterialFiles.length} arquivo(s) pronto(s) para envio ✅`;
+      }
 
       document.getElementById("back").onclick = () => {
         saveProject(i);
