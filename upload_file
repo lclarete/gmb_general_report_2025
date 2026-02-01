@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Uploader</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      .row { margin: 12px 0; }
+      button { padding: 10px 14px; cursor: pointer; }
+      #status { margin-top: 14px; white-space: pre-wrap; }
+      input[type="file"] { width: 100%; }
+    </style>
+  </head>
+  <body>
+    <h2>Upload a file to Drive</h2>
+
+    <div class="row">
+      <input id="file" type="file" />
+    </div>
+
+    <div class="row">
+      <button id="btn" type="button" onclick="handleUpload()">Upload</button>
+    </div>
+
+    <div id="status"></div>
+
+    <script>
+      function setStatus(msg) {
+        document.getElementById("status").textContent = msg;
+      }
+
+      async function handleUpload() {
+        const input = document.getElementById("file");
+        const btn = document.getElementById("btn");
+
+        if (!input.files || !input.files[0]) {
+          setStatus("Pick a file first.");
+          return;
+        }
+
+        const f = input.files[0];
+        btn.disabled = true;
+        btn.textContent = "Uploading...";
+        setStatus("");
+
+        try {
+          const dataUrl = await fileToDataUrl(f);
+
+          google.script.run
+            .withSuccessHandler((res) => {
+              btn.disabled = false;
+              btn.textContent = "Upload";
+              setStatus(
+                "Uploaded ✅\n" +
+                "Name: " + res.name + "\n" +
+                "URL: " + res.url + "\n" +
+                "FileId: " + res.fileId
+              );
+            })
+            .withFailureHandler((err) => {
+              btn.disabled = false;
+              btn.textContent = "Upload";
+              setStatus("Upload failed ❌\n" + (err && err.message ? err.message : String(err)));
+            })
+            .uploadFile_(dataUrl, f.name, f.type);
+        } catch (e) {
+          btn.disabled = false;
+          btn.textContent = "Upload";
+          setStatus("Upload failed ❌\n" + String(e));
+        }
+      }
+
+      function fileToDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error || new Error("FileReader failed"));
+          reader.readAsDataURL(file);
+        });
+      }
+    </script>
+  </body>
+</html>
