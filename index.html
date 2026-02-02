@@ -272,6 +272,33 @@
       margin-bottom: 10px;
     }
 
+    /* ✅ NEW: intro first page layout with text left + video right */
+    .introGrid{
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    @media (min-width: 900px){
+      .introGrid{
+        grid-template-columns: 1.05fr 0.95fr;
+      }
+    }
+    .introVideo{
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .introVideo iframe{
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+
     .logo{
       width: 260px;
       max-width: 70%;
@@ -339,10 +366,15 @@
   <script>
     // ----------- ENDPOINTS / LINKS -----------
     // const AUTOSAVE_URL = "https://sheet-proxy.livia-clarete.workers.dev/";
-    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbw-lZ865T56AHrXx4RNO_m0zprjVrlxvhcG1EW8D2J1FDpGe71knzkc_vy8q1Z7jCVJ/exec"; // opcional (se quiser submit final separado)
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw-lZ865T56AHrXx4RNO_m0zprjVrlxvhcG1EW8D2J1FDpGe71knzkc_vy8q1Z7jCVJ/exec"; // opcional (se quiser submit final separado)
+    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbwyUEBHIFUVvrMbjI1ooDhwR02rIa_wnKx6TB-lLunCXGjyvl-N0aUIwcXwrQv1H-_k8g/exec"; // opcional (se quiser submit final separado)
+    const WEB_APP_URL = AUTOSAVE_URL; // opcional (se quiser submit final separado)
     const LOGO_SRC = "LOGO_URL_AQUI";
-    const GUIDE_URL = "GUIA_URL_AQUI";
+
+    // ✅ UPDATED: guide link set directly
+    const GUIDE_URL = "https://livia.work/gmb_general_report_2025/Guia_de_Preenchimento_Pesquisa_Relatorio_2025.pdf";
+
+    // ✅ NEW: youtube shorts embed
+    const YOUTUBE_SHORTS_URL = "https://www.youtube.com/shorts/DboSHJkwrcc";
 
     const DEFAULT_LOGO_PLACEHOLDER =
       "https://raw.githubusercontent.com/lclarete/gmb_general_report_2025/refs/heads/main/GMB_Logo.png";
@@ -592,9 +624,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     });
 
     // ---------------- FILE UPLOAD HELPERS (Drive via Apps Script) ----------------
-    // IMPORTANT: your Apps Script expects file objects to include `dataUrl` or `base64`.
-    // This section makes sure we store that in state.projects[*].representativePhotoFiles/supportMaterialFiles.
-
     const MAX_FILE_BYTES = 7 * 1024 * 1024; // 7MB safety (base64 grows ~33%)
 
     function fileToDataUrl_(file){
@@ -627,7 +656,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           size: f.size,
           type: f.type,
           mimeType: f.type || "application/octet-stream",
-          dataUrl,                // ✅ this is the key for Drive saving
+          dataUrl,
           kind,
           projectIndex
         });
@@ -638,6 +667,17 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     // ---------------- UI / FLOW ----------------
     function qNum(page, q){
       return `${page}.${q}`;
+    }
+
+    // ✅ NEW: converts youtube shorts URL to embed URL
+    function youtubeToEmbed_(url){
+      const s = String(url || "").trim();
+      if (!s) return "";
+      const m = s.match(/youtube\.com\/shorts\/([A-Za-z0-9_-]+)/i);
+      if (m && m[1]) return `https://www.youtube.com/embed/${m[1]}`;
+      const m2 = s.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]+)/i);
+      if (m2 && m2[1]) return `https://www.youtube.com/embed/${m2[1]}`;
+      return s; // fallback
     }
 
     function render(){
@@ -670,25 +710,42 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
       const logoToUse = (LOGO_SRC && LOGO_SRC !== "LOGO_URL_AQUI") ? LOGO_SRC : DEFAULT_LOGO_PLACEHOLDER;
 
+      const ytEmbed = youtubeToEmbed_(YOUTUBE_SHORTS_URL);
+
       app.innerHTML = `
         <div class="introHeader">
           <img class="logo" src="${escapeHtml(logoToUse)}" alt="Grupo Mulheres do Brasil" />
         </div>
 
-        <div class="introText">${escapeHtml(parts[0] || "")}</div>
+        <div class="introGrid">
+          <div>
+            <div class="introText">${escapeHtml(parts[0] || "")}</div>
 
-        <div class="introLinks">
-          ${GUIDE_URL && GUIDE_URL !== "GUIA_URL_AQUI"
-            ? `<a href="${escapeHtml(GUIDE_URL)}" target="_blank" rel="noopener noreferrer">Acesse aqui o GUIA PARA PREENCHIMENTO</a>`
-            : `<div class="muted">(Guia: cole a URL pública em GUIDE_URL)</div>`}
-        </div>
+            <div class="introLinks">
+              <a href="${escapeHtml(GUIDE_URL)}" target="_blank" rel="noopener noreferrer">Acesse o guia de preenchimento aqui</a>
+            </div>
 
-        <div class="introText">${escapeHtml(parts[1] || "")}</div>
+            <div class="introText">${escapeHtml(parts[1] || "")}</div>
 
-        <div class="buttons">
-          <button class="primary" id="start">Continuar</button>
+            <div class="buttons">
+              <button class="primary" id="start">Continuar</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="introVideo" aria-label="Vídeo de apoio">
+              <iframe
+                src="${escapeHtml(ytEmbed)}"
+                title="YouTube video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+                referrerpolicy="strict-origin-when-cross-origin"
+              ></iframe>
+            </div>
+          </div>
         </div>
       `;
+
       document.getElementById("start").onclick = () => {
         state.stepIndex = 1;
         debounceAutosave_("page_change", { toStep: state.stepIndex });
@@ -697,7 +754,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     }
 
     function renderList(){
-      const page = 1; // ✅ antes era 2
+      const page = 1;
 
       app.innerHTML = `
         <div class="title">Lista de projetos</div>
@@ -786,7 +843,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     function renderProject(i){
       const p = state.projects[i];
       const n = state.projects.length;
-      const page = 2 + i; // ✅ antes era 3 + i
+      const page = 2 + i;
 
       app.innerHTML = `
         <div class="title">Vamos falar sobre: ${escapeHtml(p.title)}</div>
@@ -1127,7 +1184,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       drawCampaignRows();
       campaignsInput.oninput = () => { drawCampaignRows(); debounceAutosave_("campaigns_count_change", { projectIndex:i }); };
 
-      // ---------------- FILE INPUTS (UPDATED: stores dataUrl in state) ----------------
+      // ---------------- FILE INPUTS ----------------
       const repPhoto = document.getElementById("repPhoto");
       const repPhotoStatus = document.getElementById("repPhotoStatus");
 
@@ -1198,7 +1255,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         }
       };
 
-      // Show existing selection (if draft restored)
       if (Array.isArray(p.representativePhotoFiles) && p.representativePhotoFiles.length){
         repPhotoStatus.textContent = `Selecionado: ${p.representativePhotoFiles[0].name}`;
       }
@@ -1274,7 +1330,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     }
 
     function renderContact(){
-      const page = 2 + state.projects.length; // ✅ antes era 3 + state.projects.length
+      const page = 2 + state.projects.length;
 
       app.innerHTML = `
         <div class="title">Responsável pelo preenchimento</div>
@@ -1452,7 +1508,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       };
     }
 
-    // ✅ RESTART AQUI DENTRO DO ARQUIVO (com botão na tela final)
     function restartQuestionnaire_(){
       state.nucleus = "";
       state.projects = [];
