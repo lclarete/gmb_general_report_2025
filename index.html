@@ -272,33 +272,6 @@
       margin-bottom: 10px;
     }
 
-    /* ✅ NEW: intro first page layout with text left + video right */
-    .introGrid{
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-      align-items: start;
-    }
-    @media (min-width: 900px){
-      .introGrid{
-        grid-template-columns: 1.05fr 0.95fr;
-      }
-    }
-    .introVideo{
-      width: 100%;
-      aspect-ratio: 9 / 16;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      background: #fff;
-    }
-    .introVideo iframe{
-      width: 100%;
-      height: 100%;
-      border: 0;
-      display: block;
-    }
-
     .logo{
       width: 260px;
       max-width: 70%;
@@ -354,6 +327,52 @@
       font-size: 14px;
       color: var(--muted);
     }
+
+    /* --- Intro: texto à esquerda + vídeo à direita --- */
+    .introGrid{
+      display:grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      align-items:start;
+      margin-top: 10px;
+    }
+    @media (max-width: 860px){
+      .introGrid{ grid-template-columns: 1fr; }
+    }
+    .videoCard{
+      border:1px solid var(--border);
+      border-radius: var(--r-card);
+      padding: 12px;
+      background:#fff;
+    }
+    .videoWrap{
+      position: relative;
+      width: 100%;
+      padding-top: 177.77%; /* 9:16 */
+      border-radius: 10px;
+      overflow:hidden;
+      background: #f5f5f5;
+    }
+    .videoWrap iframe{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      border:0;
+    }
+
+    .counterRow{
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 6px;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+    .counter{
+      font-size: 12px;
+      color:#6b7280;
+    }
   </style>
 </head>
 
@@ -365,16 +384,12 @@
 
   <script>
     // ----------- ENDPOINTS / LINKS -----------
-    // const AUTOSAVE_URL = "https://sheet-proxy.livia-clarete.workers.dev/";
-    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbxpy_6WhBtzNNaFeDsxtTIc9wvzTvxde582H9OCLyLdommacpuwqy5Ky9YGXuSd4r_76g/exec"; // opcional (se quiser submit final separado)
-    const WEB_APP_URL = AUTOSAVE_URL; // opcional (se quiser submit final separado)
+    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbw-lZ865T56AHrXx4RNO_m0zprjVrlxvhcG1EW8D2J1FDpGe71knzkc_vy8q1Z7jCVJ/exec";
+    const WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbw-lZ865T56AHrXx4RNO_m0zprjVrlxvhcG1EW8D2J1FDpGe71knzkc_vy8q1Z7jCVJ/exec";
+
     const LOGO_SRC = "LOGO_URL_AQUI";
-
-    // ✅ UPDATED: guide link set directly
     const GUIDE_URL = "https://livia.work/gmb_general_report_2025/Guia_de_Preenchimento_Pesquisa_Relatorio_2025.pdf";
-
-    // ✅ NEW: youtube shorts embed
-    const YOUTUBE_SHORTS_URL = "https://www.youtube.com/shorts/DboSHJkwrcc";
+    const YT_SHORTS_URL = "https://www.youtube.com/shorts/DboSHJkwrcc";
 
     const DEFAULT_LOGO_PLACEHOLDER =
       "https://raw.githubusercontent.com/lclarete/gmb_general_report_2025/refs/heads/main/GMB_Logo.png";
@@ -623,8 +638,8 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       persistLocalDraft_();
     });
 
-    // ---------------- FILE UPLOAD HELPERS (Drive via Apps Script) ----------------
-    const MAX_FILE_BYTES = 7 * 1024 * 1024; // 7MB safety (base64 grows ~33%)
+    // ---------------- FILE UPLOAD HELPERS ----------------
+    const MAX_FILE_BYTES = 7 * 1024 * 1024;
 
     function fileToDataUrl_(file){
       return new Promise((resolve, reject) => {
@@ -669,17 +684,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       return `${page}.${q}`;
     }
 
-    // ✅ NEW: converts youtube shorts URL to embed URL
-    function youtubeToEmbed_(url){
-      const s = String(url || "").trim();
-      if (!s) return "";
-      const m = s.match(/youtube\.com\/shorts\/([A-Za-z0-9_-]+)/i);
-      if (m && m[1]) return `https://www.youtube.com/embed/${m[1]}`;
-      const m2 = s.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]+)/i);
-      if (m2 && m2[1]) return `https://www.youtube.com/embed/${m2[1]}`;
-      return s; // fallback
-    }
-
     function render(){
       app.innerHTML = "";
       if (state.stepIndex === 0) return renderIntro();
@@ -704,13 +708,24 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       return renderIntro();
     }
 
+    function youtubeEmbedFromShorts_(url){
+      try{
+        const u = new URL(url);
+        const parts = u.pathname.split("/").filter(Boolean); // ["shorts", "ID"]
+        const id = parts[0] === "shorts" ? parts[1] : "";
+        if (!id) return "";
+        return "https://www.youtube.com/embed/" + id;
+      }catch(e){
+        return "";
+      }
+    }
+
     function renderIntro(){
       const guideLine = "Acesse aqui o GUIA PARA PREENCHIMENTO.";
       const parts = INTRO_TEXT.split(guideLine);
 
       const logoToUse = (LOGO_SRC && LOGO_SRC !== "LOGO_URL_AQUI") ? LOGO_SRC : DEFAULT_LOGO_PLACEHOLDER;
-
-      const ytEmbed = youtubeToEmbed_(YOUTUBE_SHORTS_URL);
+      const ytEmbed = youtubeEmbedFromShorts_(YT_SHORTS_URL);
 
       app.innerHTML = `
         <div class="introHeader">
@@ -722,7 +737,9 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
             <div class="introText">${escapeHtml(parts[0] || "")}</div>
 
             <div class="introLinks">
-              <a href="${escapeHtml(GUIDE_URL)}" target="_blank" rel="noopener noreferrer">Acesse o guia de preenchimento aqui</a>
+              <a href="${escapeHtml(GUIDE_URL)}" target="_blank" rel="noopener noreferrer">
+                ANTES DE PROSSEGUIR, LEIA O GUIA DE PREENCHIMENTO AQUI
+              </a>
             </div>
 
             <div class="introText">${escapeHtml(parts[1] || "")}</div>
@@ -732,20 +749,21 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
             </div>
           </div>
 
-          <div>
-            <div class="introVideo" aria-label="Vídeo de apoio">
-              <iframe
-                src="${escapeHtml(ytEmbed)}"
-                title="YouTube video"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowfullscreen
-                referrerpolicy="strict-origin-when-cross-origin"
-              ></iframe>
-            </div>
+          <div class="videoCard">
+            ${ytEmbed ? `
+              <div class="muted" style="margin-bottom:10px;">Vídeo rápido (YouTube)</div>
+              <div class="videoWrap">
+                <iframe
+                  src="${escapeHtml(ytEmbed)}"
+                  title="YouTube video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen>
+                </iframe>
+              </div>
+            ` : `<div class="muted">Vídeo indisponível.</div>`}
           </div>
         </div>
       `;
-
       document.getElementById("start").onclick = () => {
         state.stepIndex = 1;
         debounceAutosave_("page_change", { toStep: state.stepIndex });
@@ -773,7 +791,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         <div class="q">
           <div class="qnum">${qNum(page,2)}</div>
           <div class="qbody">
-            <label>Liste, um por linha, todos os projetos que foram executados pelo seu comitê em 2025.</label>
+            <label>Liste, um por linha, todos os projetos que foram executados pelo seu núcleo em 2025.</label>
             <textarea id="titles" rows="10" placeholder="Projeto A&#10;Projeto B&#10;Projeto C"></textarea>
             <div class="err" id="err_titles" style="display:none;"></div>
           </div>
@@ -852,8 +870,12 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         <div class="q">
           <div class="qnum">${qNum(page,1)}</div>
           <div class="qbody">
-            <label id="lbl_objective">Objetivo da iniciativa</label>
-            <textarea id="objective" placeholder="Descreva o objetivo">${escapeHtml(p.objective)}</textarea>
+            <label id="lbl_objective">Objetivo e breve descrição da iniciativa</label>
+            <textarea id="objective" maxlength="400" placeholder="Descreva o objetivo">${escapeHtml(p.objective)}</textarea>
+            <div class="counterRow">
+              <div class="mini">Limite de 400 caracteres.</div>
+              <div class="counter" id="objectiveCounter">0/400</div>
+            </div>
             <div class="err" id="err_objective" style="display:none;"></div>
           </div>
         </div>
@@ -932,7 +954,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
             <div class="qbody">
               <label id="lbl_activitiesCount">Número de atividades realizadas</label>
               <input id="activitiesCount" type="number" min="0" placeholder="Ex: 10" value="${escapeHtml(p.activitiesCount)}" />
-              <div class="mini">Considerar apenas iniciativas. Não considerar campanhas online.</div>
+              <div class="mini">Se as atividades forem recorrentes, você pode informar o total consolidado (ex.: por mês). Não incluir campanhas online.</div>
               <div class="err" id="err_activitiesCount" style="display:none;"></div>
             </div>
           </div>
@@ -959,8 +981,8 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
             <div class="qnum">${qNum(page,9)}</div>
             <div class="qbody">
               <label id="lbl_onlineCampaignsCount">Número de campanhas online</label>
-              <input id="onlineCampaignsCount" type="number" min="0" placeholder="Ex: 3" value="${escapeHtml(p.onlineCampaignsCount)}" />
-              <div class="mini">Ao preencher, aparecerão linhas com data + nome da campanha + número de postagens + número de visualizações + número de interações.</div>
+              <input id="onlineCampaignsCount" type="number" min="0" max="12" placeholder="Ex: 3" value="${escapeHtml(p.onlineCampaignsCount)}" />
+              <div class="mini">Você pode adicionar no máximo 12 campanhas online.</div>
               <div class="err" id="err_onlineCampaignsCount" style="display:none;"></div>
             </div>
           </div>
@@ -1004,6 +1026,16 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           <button class="primary" id="next">Próximo</button>
         </div>
       `;
+
+      // objective counter
+      const objectiveEl = document.getElementById("objective");
+      const objectiveCounter = document.getElementById("objectiveCounter");
+      const refreshObjectiveCounter = () => {
+        const len = (objectiveEl.value || "").length;
+        objectiveCounter.textContent = `${len}/400`;
+      };
+      refreshObjectiveCounter();
+      objectiveEl.addEventListener("input", refreshObjectiveCounter);
 
       const partnerBox = document.getElementById("partnerBox");
       partnerBox.innerHTML = NUCLEUS_OPTIONS
@@ -1124,7 +1156,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       const campaignsInput = document.getElementById("onlineCampaignsCount");
 
       function drawCampaignRows(){
-        const count = clampInt(campaignsInput.value, 0, 200);
+        const count = clampInt(campaignsInput.value, 0, 12);
         const arr = Array.isArray(p.onlineCampaigns) ? [...p.onlineCampaigns] : [];
 
         while (arr.length < count) {
@@ -1326,7 +1358,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       p.volunteersInvolved = document.getElementById("volunteersInvolved").value;
       p.notes = document.getElementById("notes").value.trim();
       p.activitiesCount = clampInt(document.getElementById("activitiesCount").value, 0, 200);
-      p.onlineCampaignsCount = clampInt(document.getElementById("onlineCampaignsCount").value, 0, 200);
+      p.onlineCampaignsCount = clampInt(document.getElementById("onlineCampaignsCount").value, 0, 12);
     }
 
     function renderContact(){
