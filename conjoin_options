@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CBC Conjoint Demo • Copilot for PowerPoint</title>
+  <style>
+    :root{
+      --text:#111;
+      --muted:#666;
+      --border:#e7e7e7;
+      --soft:#f7f7f7;
+      --soft2:#fcfcfc;
+
+      --a-accent: rgba(0,120,215,0.85);   /* blue */
+      --b-accent: rgba(120,180,70,0.90);  /* green */
+      --a-wash: rgba(0,120,215,0.08);
+      --b-wash: rgba(120,180,70,0.10);
+
+      --warn:#a13a00;
+      --ok:#0a7a2f;
+    }
+
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 24px;
+      color: var(--text);
+      background: #fff;
+      line-height: 1.35;
+    }
+
+    .wrap{
+      max-width: 1060px;
+      margin: 0 auto;
+      border: 1px solid #ddd;
+      border-radius: 16px;
+      padding: 18px;
+      background:#fff;
+    }
+
+    .top{
+      display:flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    h1{ font-size: 20px; margin: 0 0 4px; }
+    .muted{ color: var(--muted); font-size: 13px; }
+
+    .pill{
+      display:inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--soft);
+      border:1px solid var(--border);
+      font-size: 12px;
+      color:#222;
+    }
+
+    .card{
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--soft2);
+    }
+
+    .introTitle{
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0 0 8px;
+    }
+    .introText{
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 82ch;
+    }
+    .introBullets{
+      margin: 10px 0 0;
+      padding-left: 18px;
+      color: #333;
+      font-size: 13px;
+    }
+    .introBullets li{ margin: 6px 0; }
+
+    .prompt{
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0;
+    }
+    .promptSub{
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .compareGrid{
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    table{
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    thead th{
+      background: var(--soft);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color:#333;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    thead th.optA, thead th.optB{
+      cursor: pointer;
+      user-select: none;
+    }
+
+    tbody td{
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      font-size: 14px;
+    }
+    tbody tr:last-child td{ border-bottom: none; }
+
+    td.attr{
+      width: 34%;
+      font-weight: 700;
+      background: #fcfcfc;
+    }
+
+    td.optA, td.optB{
+      width: 33%;
+      cursor: pointer;
+      border-left: 1px solid var(--border);
+      background: #fff; /* neutral by default */
+    }
+
+    /* Column highlight includes header + all cells */
+    .selectedA thead th.optA{
+      background: linear-gradient(0deg, var(--a-wash), var(--soft));
+      box-shadow: inset 0 0 0 2px var(--a-accent);
+    }
+    .selectedA tbody td.optA{ background: var(--a-wash); }
+
+    .selectedB thead th.optB{
+      background: linear-gradient(0deg, var(--b-wash), var(--soft));
+      box-shadow: inset 0 0 0 2px var(--b-accent);
+    }
+    .selectedB tbody td.optB{ background: var(--b-wash); }
+
+    .selectedA .compareGrid{ box-shadow: 0 0 0 2px rgba(0,120,215,0.35); }
+    .selectedB .compareGrid{ box-shadow: 0 0 0 2px rgba(120,180,70,0.35); }
+
+    /* Divider row inside table */
+    tr.divider td{
+      background: var(--soft);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color:#333;
+      font-weight: 800;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Only the rows in the bottom "Different" block should pop */
+    tr.diffRow td{
+      font-weight: 800;
+    }
+    tr.diffRow td.attr{
+      background: #fcfcfc;
+    }
+
+    .diffTag{
+      display:inline-block;
+      margin-left: 8px;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color:#333;
+      vertical-align: middle;
+    }
+
+    /* None option card */
+    .noneCard{
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .noneCard:hover{ border-color:#cfcfcf; }
+    .noneCard.selected{
+      border-color: #111;
+      box-shadow: 0 0 0 2px #111 inset;
+    }
+    .noneTitle{
+      margin: 0 0 6px;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .noneSub{
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .actions{
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    button{
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      background: #fff;
+      cursor: pointer;
+    }
+    button.primary{
+      border-color: #111;
+      background:#111;
+      color:#fff;
+    }
+    button:disabled{ opacity: 0.5; cursor: not-allowed; }
+
+    .msg{ font-size: 12px; color:#777; }
+    .msg.warn{ color: var(--warn); }
+    .msg.ok{ color: var(--ok); }
+
+    .done{
+      margin-top: 14px;
+      padding: 28px 16px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--soft2);
+      text-align: center;
+    }
+
+    @media (max-width: 760px){
+      td.attr{ width:auto; }
+      thead th{ font-size: 11px; }
+      .prompt{ font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Copilot for PowerPoint • Preference Study</h1>
+        <p class="muted">A short questionnaire about which Copilot feature set you’d prefer.</p>
+      </div>
+      <div class="pill" id="progressPill">Ready • 8 tasks</div>
+    </div>
+
+    <div class="card" id="welcomeCard">
+      <p class="introTitle">Welcome 👋</p>
+      <p class="introText">
+        Thanks for taking a minute to share your perspective. In this questionnaire, you’ll compare
+        <b>two different descriptions of Copilot features</b> side by side.
+        This is not a live product experience, it’s a set of feature descriptions to help us understand preferences.
+      </p>
+      <p class="introText" style="margin-top:10px;">
+        Your responses are confidential and will be used only for research purposes. Results will be analyzed in aggregate
+        (in grouped blocks), so individual answers are not identified.
+      </p>
+      <ul class="introBullets">
+        <li>Read Option 1 and Option 2 in the table</li>
+        <li>Click <b>Option 1</b> or <b>Option 2</b> to select a whole column</li>
+      </ul>
+
+      <div class="actions">
+        <div class="msg">Ready when you are.</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="primary" id="startBtn">Start</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="taskBox" style="display:none;">
+      <p class="prompt" id="taskPrompt"></p>
+      <p class="promptSub">Click Option 1 or Option 2 to select. Rows that differ are moved to the bottom.</p>
+
+      <div class="compareGrid">
+        <table aria-label="Option comparison table">
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th class="optA" id="thA">Option 1</th>
+              <th class="optB" id="thB">Option 2</th>
+            </tr>
+          </thead>
+          <tbody id="compareBody"></tbody>
+        </table>
+      </div>
+
+      <div class="noneCard" id="noneCard" role="button" aria-label="Select none of these">
+        <p class="noneTitle">None of these</p>
+        <p class="noneSub">I wouldn’t choose either option.</p>
+      </div>
+
+      <div class="actions">
+        <div class="msg warn" id="validationMsg">Pick Option 1, Option 2, or None.</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button id="backBtn">Back</button>
+          <button class="primary" id="nextBtn" disabled>Next</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FINAL THANK YOU PAGE (replaces Done/Export/Reset) -->
+    <div class="done" id="doneBox" style="display:none;">
+      <h2 style="font-size:16px; margin: 0 0 6px;">Thank you for your participation.</h2>
+      <p class="muted">Your answers have been recorded.</p>
+    </div>
+  </div>
+
+<script>
+  const STUDY = "copilot-ppt-cbc";
+  const STORAGE_KEY = `${STUDY}:responses`;
+  const STATE_KEY = `${STUDY}:state`;
+
+  const ATTRIBUTES = [
+    { name: "Design automation", key: "design", levels: [
+      { id: "design_low",  label: "Basic layout suggestions" },
+      { id: "design_med",  label: "Strong layout + theme suggestions" },
+      { id: "design_high", label: "Auto-build slides with brand polish" }
+    ]},
+    { name: "Content generation", key: "content", levels: [
+      { id: "content_low",  label: "Only minor rewrites" },
+      { id: "content_med",  label: "Draft bullets and slide text from prompts" },
+      { id: "content_high", label: "Full outline + slide drafts from a doc" }
+    ]},
+    { name: "Data to visuals", key: "visuals", levels: [
+      { id: "viz_low",  label: "No data visualization help" },
+      { id: "viz_med",  label: "Suggest charts and visuals" },
+      { id: "viz_high", label: "Generate charts from pasted data" }
+    ]},
+    { name: "Brand compliance", key: "brand", levels: [
+      { id: "brand_low",  label: "Manual brand alignment" },
+      { id: "brand_med",  label: "Guided brand checks (fonts, colors)" },
+      { id: "brand_high", label: "Enforced template + logo rules" }
+    ]},
+    { name: "Time saved", key: "time", levels: [
+      { id: "time_low",  label: "Saves ~10 minutes" },
+      { id: "time_med",  label: "Saves ~30 minutes" },
+      { id: "time_high", label: "Saves ~60 minutes" }
+    ]}
+  ];
+
+  const NUM_TASKS = 8;
+
+  function nowISO(){ return new Date().toISOString(); }
+
+  function randInt(min, maxInclusive){
+    return Math.floor(Math.random() * (maxInclusive - min + 1)) + min;
+  }
+
+  function sampleLevel(attribute) {
+    const levels = attribute.levels;
+    return levels[Math.floor(Math.random() * levels.length)];
+  }
+
+  function sampleDifferentLevel(attribute, notId){
+    const candidates = attribute.levels.filter(l => l.id !== notId);
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // Build tasks so Option 1 and Option 2 differ on ONLY 2–3 attributes
+  function buildTasks() {
+    const tasks = [];
+    const keys = ATTRIBUTES.map(a => a.key);
+
+    for (let t = 0; t < NUM_TASKS; t++) {
+      const A = {};
+      ATTRIBUTES.forEach(attr => { A[attr.key] = sampleLevel(attr); });
+
+      const B = JSON.parse(JSON.stringify(A));
+
+      const k = randInt(2, 3);
+      const diffKeys = shuffle(keys).slice(0, Math.min(k, keys.length));
+
+      diffKeys.forEach(key => {
+        const attr = ATTRIBUTES.find(a => a.key === key);
+        B[key] = sampleDifferentLevel(attr, A[key].id);
+      });
+
+      tasks.push({
+        task_id: `task_${t+1}`,
+        prompt: "Imagine you’re preparing slides for a real meeting. Based only on these feature descriptions, which option would you choose?",
+        alts: [A, B]
+      });
+    }
+    return tasks;
+  }
+
+  const TASKS = buildTasks();
+
+  let state = loadState() || {
+    currentTaskIndex: 0,
+    started_at: nowISO(),
+    completed_at: null,
+    hasStarted: false
+  };
+  let responses = loadResponses() || [];
+
+  function loadResponses(){
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+    catch { return []; }
+  }
+  function saveResponses(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(responses)); }
+  function loadState(){
+    try { return JSON.parse(localStorage.getItem(STATE_KEY) || "null"); }
+    catch { return null; }
+  }
+  function saveState(){ localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
+
+  const progressPill = document.getElementById("progressPill");
+  const compareBody = document.getElementById("compareBody");
+  const taskPromptEl = document.getElementById("taskPrompt");
+  const validationMsg = document.getElementById("validationMsg");
+  const nextBtn = document.getElementById("nextBtn");
+  const backBtn = document.getElementById("backBtn");
+  const doneBox = document.getElementById("doneBox");
+  const taskBox = document.getElementById("taskBox");
+  const noneCard = document.getElementById("noneCard");
+  const thA = document.getElementById("thA");
+  const thB = document.getElementById("thB");
+  const welcomeCard = document.getElementById("welcomeCard");
+  const startBtn = document.getElementById("startBtn");
+  const wrap = document.querySelector(".wrap");
+
+  function getResponse(task_id){
+    return responses.find(r => r.task_id === task_id) || null;
+  }
+
+  function setSelection(selected){
+    wrap.classList.remove("selectedA","selectedB");
+    noneCard.classList.remove("selected");
+
+    if (selected === 1) wrap.classList.add("selectedA");
+    if (selected === 2) wrap.classList.add("selectedB");
+    if (selected === 0) noneCard.classList.add("selected");
+
+    if (selected === 1 || selected === 2 || selected === 0) {
+      validationMsg.textContent = "Locked in. Hit Next.";
+      validationMsg.className = "msg ok";
+      nextBtn.disabled = false;
+    } else {
+      validationMsg.textContent = "Pick Option 1, Option 2, or None.";
+      validationMsg.className = "msg warn";
+      nextBtn.disabled = true;
+    }
+  }
+
+  function rowHTML(attrName, aLabel, bLabel, isDiff=false){
+    const tr = document.createElement("tr");
+    if (isDiff) tr.classList.add("diffRow");
+
+    const tdAttr = document.createElement("td");
+    tdAttr.className = "attr";
+    tdAttr.textContent = attrName;
+
+    if (isDiff) {
+      const tag = document.createElement("span");
+      tag.className = "diffTag";
+      tag.textContent = "Different";
+      tdAttr.appendChild(tag);
+    }
+
+    const tdA = document.createElement("td");
+    tdA.className = "optA";
+    tdA.textContent = aLabel;
+
+    const tdB = document.createElement("td");
+    tdB.className = "optB";
+    tdB.textContent = bLabel;
+
+    tdA.addEventListener("click", () => { currentSelected = 1; setSelection(1); });
+    tdB.addEventListener("click", () => { currentSelected = 2; setSelection(2); });
+
+    tr.appendChild(tdAttr);
+    tr.appendChild(tdA);
+    tr.appendChild(tdB);
+    return tr;
+  }
+
+  let currentSelected = null;
+
+  function render(){
+    if (!state.hasStarted) {
+      welcomeCard.style.display = "block";
+      taskBox.style.display = "none";
+      doneBox.style.display = "none";
+      progressPill.textContent = `Ready • ${NUM_TASKS} tasks`;
+      return;
+    }
+
+    welcomeCard.style.display = "none";
+
+    if (state.currentTaskIndex >= TASKS.length) {
+      taskBox.style.display = "none";
+      doneBox.style.display = "block";
+      progressPill.textContent = `Complete • ${TASKS.length} tasks`;
+      return;
+    }
+
+    taskBox.style.display = "block";
+    doneBox.style.display = "none";
+
+    const task = TASKS[state.currentTaskIndex];
+    progressPill.textContent = `Task ${state.currentTaskIndex + 1} / ${TASKS.length}`;
+    taskPromptEl.textContent = task.prompt;
+
+    const existing = getResponse(task.task_id);
+    currentSelected = existing?.chosen_alt ?? null;
+
+    compareBody.innerHTML = "";
+
+    const A = task.alts[0];
+    const B = task.alts[1];
+
+    const sameRows = [];
+    const diffRows = [];
+
+    ATTRIBUTES.forEach(attr => {
+      const aLvl = A[attr.key];
+      const bLvl = B[attr.key];
+      const isDiff = aLvl.id !== bLvl.id;
+
+      const tr = rowHTML(attr.name, aLvl.label, bLvl.label, isDiff);
+
+      if (isDiff) diffRows.push(tr);
+      else sameRows.push(tr);
+    });
+
+    // 1) Append SAME rows first (top)
+    sameRows.forEach(tr => compareBody.appendChild(tr));
+
+    // 2) Divider + DIFFERENT rows at bottom
+    const divider = document.createElement("tr");
+    divider.className = "divider";
+    const dtd = document.createElement("td");
+    dtd.colSpan = 3;
+    dtd.textContent = "Different";
+    divider.appendChild(dtd);
+    compareBody.appendChild(divider);
+
+    diffRows.forEach(tr => compareBody.appendChild(tr));
+
+    thA.onclick = () => { currentSelected = 1; setSelection(1); };
+    thB.onclick = () => { currentSelected = 2; setSelection(2); };
+    noneCard.onclick = () => { currentSelected = 0; setSelection(0); };
+
+    setSelection(currentSelected);
+
+    backBtn.disabled = state.currentTaskIndex === 0;
+    backBtn.onclick = () => {
+      state.currentTaskIndex = Math.max(0, state.currentTaskIndex - 1);
+      saveState();
+      render();
+    };
+
+    nextBtn.onclick = () => {
+      if (currentSelected !== 0 && currentSelected !== 1 && currentSelected !== 2) return;
+
+      const payload = {
+        study: STUDY,
+        task_id: task.task_id,
+        chosen_alt: currentSelected,
+        prompt: task.prompt,
+        alts_json: JSON.stringify(task.alts),
+        ts: nowISO()
+      };
+
+      const idx = responses.findIndex(r => r.task_id === task.task_id);
+      if (idx >= 0) responses[idx] = payload;
+      else responses.push(payload);
+
+      saveResponses();
+
+      state.currentTaskIndex += 1;
+      if (state.currentTaskIndex >= TASKS.length) state.completed_at = nowISO();
+      saveState();
+      render();
+    };
+  }
+
+  startBtn.onclick = () => {
+    state.hasStarted = true;
+    saveState();
+    render();
+  };
+
+  render();
+</script>
+</body>
+</html>
