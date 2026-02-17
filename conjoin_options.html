@@ -328,7 +328,7 @@
       </div>
     </div>
 
-    <!-- FINAL THANK YOU PAGE (replaces Done/Export/Reset) -->
+    <!-- FINAL THANK YOU PAGE -->
     <div class="done" id="doneBox" style="display:none;">
       <h2 style="font-size:16px; margin: 0 0 6px;">Thank you for your participation.</h2>
       <p class="muted">Your answers have been recorded.</p>
@@ -339,6 +339,37 @@
   const STUDY = "copilot-ppt-cbc";
   const STORAGE_KEY = `${STUDY}:responses`;
   const STATE_KEY = `${STUDY}:state`;
+
+  // ✅ NEW: server endpoint that CAN receive POST
+  // Put your PHP file next to this HTML and point here:
+  const POST_ENDPOINT = "https://livia.work/gmb_general_report_2025/conjoin_options.php";
+
+  // ✅ NEW: simple session id so you can group a respondent across 8 tasks
+  const SESSION_KEY = `${STUDY}:session_id`;
+  function getSessionId(){
+    let id = localStorage.getItem(SESSION_KEY);
+    if (!id) {
+      id = (crypto?.randomUUID ? crypto.randomUUID() : `sid_${Math.random().toString(16).slice(2)}_${Date.now()}`);
+      localStorage.setItem(SESSION_KEY, id);
+    }
+    return id;
+  }
+
+  // ✅ NEW: POST helper (non-blocking, won’t break UX if it fails)
+  async function postJSON(obj){
+    try{
+      const res = await fetch(POST_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(obj)
+      });
+      // Best effort: try parse response, but don’t require it
+      try { return await res.json(); } catch { return { ok: res.ok }; }
+    } catch(e){
+      console.warn("POST failed:", e);
+      return { ok: false, error: String(e) };
+    }
+  }
 
   const ATTRIBUTES = [
     { name: "Design automation", key: "design", levels: [
@@ -395,7 +426,6 @@
     return a;
   }
 
-  // Build tasks so Option 1 and Option 2 differ on ONLY 2–3 attributes
   function buildTasks() {
     const tasks = [];
     const keys = ATTRIBUTES.map(a => a.key);
@@ -563,10 +593,8 @@
       else sameRows.push(tr);
     });
 
-    // 1) Append SAME rows first (top)
     sameRows.forEach(tr => compareBody.appendChild(tr));
 
-    // 2) Divider + DIFFERENT rows at bottom
     const divider = document.createElement("tr");
     divider.className = "divider";
     const dtd = document.createElement("td");
@@ -590,26 +618,47 @@
       render();
     };
 
-    nextBtn.onclick = () => {
+    nextBtn.onclick = async () => {
       if (currentSelected !== 0 && currentSelected !== 1 && currentSelected !== 2) return;
+
+      const taskIndex = state.currentTaskIndex;
 
       const payload = {
         study: STUDY,
+        session_id: getSessionId(),          // ✅ NEW
         task_id: task.task_id,
+        task_index: taskIndex + 1,           // ✅ NEW (nice for Excel)
         chosen_alt: currentSelected,
         prompt: task.prompt,
         alts_json: JSON.stringify(task.alts),
-        ts: nowISO()
+        ts: nowISO(),
+        started_at: state.started_at,        // ✅ NEW
+        completed_at: null                   // ✅ NEW (filled on completion)
       };
 
       const idx = responses.findIndex(r => r.task_id === task.task_id);
       if (idx >= 0) responses[idx] = payload;
       else responses.push(payload);
-
       saveResponses();
 
+      // ✅ NEW: send this row to your PHP endpoint (which can forward/store)
+      postJSON({ type: "response", ...payload });
+
       state.currentTaskIndex += 1;
-      if (state.currentTaskIndex >= TASKS.length) state.completed_at = nowISO();
+      if (state.currentTaskIndex >= TASKS.length) {
+        state.completed_at = nowISO();
+
+        // ✅ NEW: optional completion event
+        postJSON({
+          type: "completed",
+          study: STUDY,
+          session_id: getSessionId(),
+          started_at: state.started_at,
+          completed_at: state.completed_at,
+          total_tasks: TASKS.length
+        });
+      }
+
       saveState();
       render();
     };
@@ -618,6 +667,16 @@
   startBtn.onclick = () => {
     state.hasStarted = true;
     saveState();
+
+    // ✅ NEW: optional "started" ping (useful for logging)
+    postJSON({
+      type: "started",
+      study: STUDY,
+      session_id: getSessionId(),
+      started_at: state.started_at,
+      ts: nowISO()
+    });
+
     render();
   };
 
