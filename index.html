@@ -329,7 +329,6 @@
       color: var(--muted);
     }
 
-    /* --- Intro: texto à esquerda + vídeo à direita --- */
     .introGrid{
       display:grid;
       grid-template-columns: 1.2fr 0.8fr;
@@ -349,7 +348,7 @@
     .videoWrap{
       position: relative;
       width: 100%;
-      padding-top: 177.77%; /* 9:16 */
+      padding-top: 177.77%;
       border-radius: 10px;
       overflow:hidden;
       background: #f5f5f5;
@@ -384,7 +383,6 @@
   </div>
 
   <script>
-    // ----------- ENDPOINTS / LINKS -----------
     const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbw6WsxnC0qSLgt5x90Q5H1rZnsZqUB2bGeRc3fSeDbm9huPOYvKkClfZlaGw_9SfX-h/exec";
     const WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbw6WsxnC0qSLgt5x90Q5H1rZnsZqUB2bGeRc3fSeDbm9huPOYvKkClfZlaGw_9SfX-h/exec";
 
@@ -528,7 +526,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
     const app = document.getElementById("app");
 
-    // ---------------- AUTOSAVE ----------------
     let autosaveTimer = null;
     let lastAutosaveAt = 0;
 
@@ -639,7 +636,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       persistLocalDraft_();
     });
 
-    // ---------------- FILE UPLOAD HELPERS ----------------
     const MAX_FILE_BYTES = 7 * 1024 * 1024;
 
     function fileToDataUrl_(file){
@@ -680,7 +676,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       return out;
     }
 
-    // ---------------- UI / FLOW ----------------
     function qNum(page, q){
       return `${page}.${q}`;
     }
@@ -712,7 +707,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     function youtubeEmbedFromShorts_(url){
       try{
         const u = new URL(url);
-        const parts = u.pathname.split("/").filter(Boolean); // ["shorts", "ID"]
+        const parts = u.pathname.split("/").filter(Boolean);
         const id = parts[0] === "shorts" ? parts[1] : "";
         if (!id) return "";
         return "https://www.youtube.com/embed/" + id;
@@ -1028,7 +1023,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         </div>
       `;
 
-      // objective counter
       const objectiveEl = document.getElementById("objective");
       const objectiveCounter = document.getElementById("objectiveCounter");
       const refreshObjectiveCounter = () => {
@@ -1217,7 +1211,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       drawCampaignRows();
       campaignsInput.oninput = () => { drawCampaignRows(); debounceAutosave_("campaigns_count_change", { projectIndex:i }); };
 
-      // ---------------- FILE INPUTS ----------------
       const repPhoto = document.getElementById("repPhoto");
       const repPhotoStatus = document.getElementById("repPhotoStatus");
 
@@ -1434,6 +1427,118 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       };
     }
 
+    function sanitizeFileName_(value){
+      return String(value || "")
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+        .replace(/\s+/g, "_")
+        .replace(/_+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 120) || "arquivo";
+    }
+
+    function splitDataUrl_(dataUrl){
+      const match = String(dataUrl || "").match(/^data:([^;]+);base64,(.+)$/);
+      if (!match) return null;
+      return {
+        mimeType: match[1],
+        base64: match[2]
+      };
+    }
+
+    function buildExportPayload_(){
+      return {
+        exportedAt: new Date().toISOString(),
+        draftId: getDraftId_(),
+        nucleus: state.nucleus,
+        contact: {
+          name: state.contactName,
+          phone: state.contactPhone,
+          email: state.contactEmail
+        },
+        projects: state.projects.map((p, idx) => ({
+          index: idx + 1,
+          title: p.title,
+          objective: p.objective,
+          cause: p.cause,
+          frequency: p.frequency,
+          targetAudience: p.targetAudience,
+          partnerNuclei: p.partnerNuclei || [],
+          volunteersInvolved: p.volunteersInvolved,
+          activitiesCount: p.activitiesCount,
+          activities: p.activities || [],
+          onlineCampaignsCount: p.onlineCampaignsCount,
+          onlineCampaigns: p.onlineCampaigns || [],
+          supportReceived: p.supportReceived || [],
+          notes: p.notes || "",
+          representativePhotoFiles: (p.representativePhotoFiles || []).map(f => ({
+            name: f.name,
+            size: f.size,
+            type: f.type,
+            mimeType: f.mimeType,
+            kind: f.kind,
+            projectIndex: f.projectIndex
+          })),
+          supportMaterialFiles: (p.supportMaterialFiles || []).map(f => ({
+            name: f.name,
+            size: f.size,
+            type: f.type,
+            mimeType: f.mimeType,
+            kind: f.kind,
+            projectIndex: f.projectIndex
+          }))
+        }))
+      };
+    }
+
+    async function downloadReviewZip_(){
+      const zip = new JSZip();
+
+      const safeName = sanitizeFileName_(state.contactName || "responsavel");
+      const safeId = sanitizeFileName_(getDraftId_());
+      const rootFolderName = `${safeName}_${safeId}`;
+      const root = zip.folder(rootFolderName);
+
+      const jsonData = buildExportPayload_();
+      root.file("dados_formulario.json", JSON.stringify(jsonData, null, 2));
+
+      const fotosFolder = root.folder("fotos_representativas");
+      const materiaisFolder = root.folder("materiais_apoio");
+
+      state.projects.forEach((project, projectIndex) => {
+        const projectSafe = sanitizeFileName_(project.title || `projeto_${projectIndex + 1}`);
+        const projectNumber = String(projectIndex + 1).padStart(2, "0");
+
+        (project.representativePhotoFiles || []).forEach((file, fileIndex) => {
+          const parsed = splitDataUrl_(file.dataUrl);
+          if (!parsed) return;
+          const originalName = sanitizeFileName_(file.name || `foto_${fileIndex + 1}`);
+          const fileName = `${projectNumber}_${projectSafe}__${originalName}`;
+          fotosFolder.file(fileName, parsed.base64, { base64: true });
+        });
+
+        (project.supportMaterialFiles || []).forEach((file, fileIndex) => {
+          const parsed = splitDataUrl_(file.dataUrl);
+          if (!parsed) return;
+          const originalName = sanitizeFileName_(file.name || `material_${fileIndex + 1}`);
+          const fileName = `${projectNumber}_${projectSafe}__${originalName}`;
+          materiaisFolder.file(fileName, parsed.base64, { base64: true });
+        });
+      });
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const zipFileName = `${rootFolderName}.zip`;
+
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = zipFileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
     function renderReview(){
       const rows = state.projects.map(p => `
         <tr>
@@ -1473,6 +1578,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
         <div class="buttons">
           <button id="back">Voltar</button>
+          <button id="downloadZip">Baixar ZIP com JSON e anexos</button>
           <button class="primary" id="submit">Enviar final</button>
         </div>
 
@@ -1484,6 +1590,24 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         state.stepIndex = lastProjectStep + 1;
         debounceAutosave_("page_change", { toStep: state.stepIndex });
         render();
+      };
+
+      document.getElementById("downloadZip").onclick = async () => {
+        const status = document.getElementById("status");
+        const btn = document.getElementById("downloadZip");
+
+        try{
+          btn.disabled = true;
+          status.textContent = "Preparando ZIP para download…";
+          await downloadReviewZip_();
+          status.textContent = "ZIP gerado com sucesso ✅";
+        } catch(e){
+          console.error(e);
+          status.textContent = "Erro ao gerar o ZIP: " + (e.message || String(e));
+          alert("Erro ao gerar o ZIP: " + (e.message || String(e)));
+        } finally {
+          btn.disabled = false;
+        }
       };
 
       document.getElementById("submit").onclick = async () => {
@@ -1566,7 +1690,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           <div class="finalHint">Obrigada por registrar as iniciativas de 2025.</div>
 
           <div class="buttons" style="margin-top:16px;">
-            <button id="restartBtn">Enviar novos projetos e recomeçar o questionário </button>
+            <button id="restartBtn">Enviar novos projetos e recomeçar o questionário</button>
           </div>
         </div>
       `;
@@ -1636,7 +1760,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     tryRestoreLocalDraft_();
     render();
     debounceAutosave_("open_form", { restored: true });
-    
   </script>
 </body>
 </html>
