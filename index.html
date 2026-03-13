@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pesquisa sobre projetos realizados em 2025</title>
@@ -373,6 +374,27 @@
       font-size: 12px;
       color:#6b7280;
     }
+
+    /* --- Download box on review page --- */
+    .downloadBox{
+      border: 1px solid var(--blockBorderA);
+      background: var(--blockA);
+      border-radius: var(--r-block);
+      padding: 14px 16px;
+      margin-top: 18px;
+    }
+    .downloadBox .downloadTitle{
+      font-weight: 750;
+      color: var(--navy);
+      margin: 0 0 4px;
+      font-size: 15px;
+    }
+    .downloadBox .downloadDesc{
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0 0 10px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 
@@ -679,6 +701,78 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       return out;
     }
 
+    // ---------------- ZIP DOWNLOAD ----------------
+    async function downloadZip_(){
+      const btn = document.getElementById("downloadBtn");
+      btn.disabled = true;
+      btn.textContent = "Gerando arquivo…";
+
+      try {
+        const zip = new JSZip();
+
+        // folder name: contactName + draftId
+        const safeName = (state.contactName || "usuario").replace(/[^a-zA-Z0-9_\-]/g, "_");
+        const safeId   = getDraftId_().replace(/[^a-zA-Z0-9_\-]/g, "_");
+        const folderName = safeName + "_" + safeId;
+        const folder = zip.folder(folderName);
+
+        // --- data.json (no dataUrls — metadata only for files) ---
+        const exportData = {
+          exportedAt:  new Date().toISOString(),
+          draftId:     getDraftId_(),
+          nucleus:     state.nucleus,
+          contact: {
+            name:  state.contactName,
+            phone: state.contactPhone,
+            email: state.contactEmail
+          },
+          projects: state.projects.map(p => {
+            const clean = Object.assign({}, p);
+            clean.representativePhotoFiles = (p.representativePhotoFiles || []).map(f => ({ name: f.name, size: f.size, type: f.type }));
+            clean.supportMaterialFiles     = (p.supportMaterialFiles     || []).map(f => ({ name: f.name, size: f.size, type: f.type }));
+            return clean;
+          })
+        };
+        folder.file("data.json", JSON.stringify(exportData, null, 2));
+
+        // --- files, organized by project ---
+        const filesFolder = folder.folder("arquivos");
+
+        state.projects.forEach((p, pi) => {
+          const projectSlug = "p" + (pi + 1) + "_" + (p.title || "projeto").replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30);
+
+          (p.representativePhotoFiles || []).forEach((f, fi) => {
+            if (!f.dataUrl) return;
+            const b64 = f.dataUrl.includes("base64,") ? f.dataUrl.split("base64,")[1] : f.dataUrl;
+            filesFolder.file(projectSlug + "/foto_" + (fi + 1) + "_" + f.name, b64, { base64: true });
+          });
+
+          (p.supportMaterialFiles || []).forEach((f, fi) => {
+            if (!f.dataUrl) return;
+            const b64 = f.dataUrl.includes("base64,") ? f.dataUrl.split("base64,")[1] : f.dataUrl;
+            filesFolder.file(projectSlug + "/material_" + (fi + 1) + "_" + f.name, b64, { base64: true });
+          });
+        });
+
+        // --- generate & trigger download ---
+        const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement("a");
+        a.href     = url;
+        a.download = folderName + ".zip";
+        a.click();
+        URL.revokeObjectURL(url);
+
+        btn.textContent = "Cópia baixada ✅";
+        btn.disabled = false;
+
+      } catch(e) {
+        btn.textContent = "Erro ao gerar ZIP";
+        btn.disabled = false;
+        alert("Erro: " + e.message);
+      }
+    }
+
     // ---------------- UI / FLOW ----------------
     function qNum(page, q){
       return `${page}.${q}`;
@@ -711,7 +805,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     function youtubeEmbedFromShorts_(url){
       try{
         const u = new URL(url);
-        const parts = u.pathname.split("/").filter(Boolean); // ["shorts", "ID"]
+        const parts = u.pathname.split("/").filter(Boolean);
         const id = parts[0] === "shorts" ? parts[1] : "";
         if (!id) return "";
         return "https://www.youtube.com/embed/" + id;
@@ -997,7 +1091,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           <div class="qbody">
             <label>Notas (opcional)</label>
             <textarea id="notes" placeholder="Detalhes extras">${escapeHtml(p.notes)}</textarea>
-            <div class="mini">Se marcou “Outros”, descreva aqui.</div>
+            <div class="mini">Se marcou "Outros", descreva aqui.</div>
           </div>
         </div>
 
@@ -1335,7 +1429,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
         if (p.supportReceived.includes("outros") && !p.notes.trim()) {
           ok = false;
-          alert("Você marcou “Outros (especificar no campo Notas)”. Por favor, descreva em Notas.");
+          alert("Você marcou "Outros (especificar no campo Notas)". Por favor, descreva em Notas.");
         }
 
         if (!ok) return;
@@ -1470,6 +1564,12 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           <tbody>${rows}</tbody>
         </table>
 
+        <div class="downloadBox">
+          <div class="downloadTitle">⬇ Baixar cópia local dos seus dados</div>
+          <div class="downloadDesc">Opcional, mas recomendado. Gera um arquivo .zip com todos os seus dados (data.json) e arquivos anexados, organizado por projeto. Você pode baixar antes ou depois de enviar.</div>
+          <button id="downloadBtn" onclick="downloadZip_()">Baixar cópia local (.zip)</button>
+        </div>
+
         <div class="buttons">
           <button id="back">Voltar</button>
           <button class="primary" id="submit">Enviar final</button>
@@ -1565,7 +1665,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           <div class="finalHint">Obrigada por registrar as iniciativas de 2025.</div>
 
           <div class="buttons" style="margin-top:16px;">
-            <button id="restartBtn">Enviar novos projetos e recomeçar o questionário </button>
+            <button id="restartBtn">Enviar novos projetos e recomeçar o questionário</button>
           </div>
         </div>
       `;
@@ -1635,6 +1735,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     tryRestoreLocalDraft_();
     render();
     debounceAutosave_("open_form", { restored: true });
+
   </script>
 </body>
 </html>
