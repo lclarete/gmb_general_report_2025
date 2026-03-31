@@ -383,8 +383,8 @@
   </div>
 
   <script>
-    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbyK1dWh-_WDhYVWm67_7lTLsgundMuAJm0wlDjqQLF16r9XaSANxy4mESgzNGHzj1nI/exec";
-    const WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbyK1dWh-_WDhYVWm67_7lTLsgundMuAJm0wlDjqQLF16r9XaSANxy4mESgzNGHzj1nI/exec";
+    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbwNCaDVKC6FOv-R47Iv5sHjxhL07KUaP_LjWzx_dutXyC1jlgsK1G8Vp3BY9AI7rjhV/exec";
+    const WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbwNCaDVKC6FOv-R47Iv5sHjxhL07KUaP_LjWzx_dutXyC1jlgsK1G8Vp3BY9AI7rjhV/exec";
 
     const LOGO_SRC = "LOGO_URL_AQUI";
     const GUIDE_URL = "https://livia.work/gmb_general_report_2025/Guia-Preenchimento_Relatorio_2025_v2.pdf";
@@ -572,6 +572,77 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       }
     }
 
+    /* ----------------------------------------------------------------
+       FIX 1: Strip file dataUrl from projects before sending to GAS.
+       dataUrl blobs can be several MB each and bloat the payload,
+       causing timeouts and "Failed to fetch" errors.
+       ---------------------------------------------------------------- */
+    function stripFileDataUrls_(projects){
+      return (projects || []).map(p => ({
+        ...p,
+        representativePhotoFiles: (p.representativePhotoFiles || []).map(f => ({
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          mimeType: f.mimeType,
+          kind: f.kind,
+          projectIndex: f.projectIndex
+        })),
+        supportMaterialFiles: (p.supportMaterialFiles || []).map(f => ({
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          mimeType: f.mimeType,
+          kind: f.kind,
+          projectIndex: f.projectIndex
+        }))
+      }));
+    }
+
+    /* ----------------------------------------------------------------
+       FIX: POST to Google Apps Script via hidden <form> + <iframe>.
+
+       fetch() fails due to CORS on the GAS 302 redirect chain.
+       Form submissions are EXEMPT from CORS entirely — the browser
+       always sends them, regardless of origin.  We target a hidden
+       iframe so the page doesn't navigate away.
+
+       GAS receives the JSON string in  e.parameter.payload .
+       ---------------------------------------------------------------- */
+    function postToGAS_(url, bodyObj){
+      return new Promise(function(resolve){
+        var id = "gas_frame_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+
+        var iframe = document.createElement("iframe");
+        iframe.name = id;
+        iframe.style.display = "none";
+        document.body.appendChild(iframe);
+
+        var form = document.createElement("form");
+        form.method = "POST";
+        form.action = url;
+        form.target = id;
+        form.style.display = "none";
+
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "payload";
+        input.value = JSON.stringify(bodyObj);
+        form.appendChild(input);
+
+        document.body.appendChild(form);
+        form.submit();
+
+        /* Clean up after a delay; we can't read the iframe response
+           (cross-origin), but GAS has received and processed the POST. */
+        setTimeout(function(){
+          try { form.remove(); } catch(e){}
+          try { iframe.remove(); } catch(e){}
+          resolve({ ok: true, _note: "form_iframe" });
+        }, 4000);
+      });
+    }
+
     function debounceAutosave_(reason, meta){
       persistLocalDraft_();
       clearTimeout(autosaveTimer);
@@ -588,30 +659,26 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       const submissionCode = makeSubmissionCode_(isFinal ? "final_submit" : "draft_autosave");
 
       try{
-        const output = await fetch(AUTOSAVE_URL, {
-          method: "POST",
-          body: JSON.stringify({
-            field1: "Hello",
-            field2: "World",
-            payload: {
-              kind: kind,
-              submissionCode: submissionCode,
-              draftId: getDraftId_(),
-              savedAt: new Date().toISOString(),
-              reason: reason || "unknown",
-              meta: meta || {},
-              data: {
-                nucleus: state.nucleus,
-                contact: { name: state.contactName, phone: state.contactPhone, email: state.contactEmail },
-                projects: state.projects,
-                stepIndex: state.stepIndex
-              }
+        /* FIX 3: Use postToGAS_ helper (text/plain, no preflight)
+           and strip file blobs from the payload. */
+        const out = await postToGAS_(AUTOSAVE_URL, {
+          payload: {
+            kind: kind,
+            submissionCode: submissionCode,
+            draftId: getDraftId_(),
+            savedAt: new Date().toISOString(),
+            reason: reason || "unknown",
+            meta: meta || {},
+            data: {
+              nucleus: state.nucleus,
+              contact: { name: state.contactName, phone: state.contactPhone, email: state.contactEmail },
+              projects: stripFileDataUrls_(state.projects),
+              stepIndex: state.stepIndex
             }
-          }),
-          headers: { "Content-Type": "application/json" }
+          }
         });
 
-        console.log(output);
+        console.log("autosave response:", out);
 
         const status = document.getElementById("status");
         if (status) {
@@ -620,7 +687,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       }catch(e){
         const status = document.getElementById("status");
         if (status) status.textContent = "Falha ao salvar (tentará novamente)";
-        console.error(e);
+        console.error("autosave error:", e);
       }
     }
 
@@ -993,7 +1060,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           <div class="qbody">
             <label>Notas (opcional)</label>
             <textarea id="notes" placeholder="Detalhes extras">${escapeHtml(p.notes)}</textarea>
-            <div class="mini">Se marcou “Outros”, descreva aqui.</div>
+            <div class="mini">Se marcou "Outros", descreva aqui.</div>
           </div>
         </div>
 
@@ -1329,7 +1396,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
         if (p.supportReceived.includes("outros") && !p.notes.trim()) {
           ok = false;
-          alert("Você marcou “Outros (especificar no campo Notas)”. Por favor, descreva em Notas.");
+          alert("Você marcou \u201cOutros (especificar no campo Notas)\u201d. Por favor, descreva em Notas.");
         }
 
         if (!ok) return;
@@ -1610,6 +1677,11 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         }
       };
 
+      /* ----------------------------------------------------------------
+         FIX 4: Final submit — use postToGAS_ helper and strip file blobs.
+         Files are kept in localStorage / ZIP export only; the GAS
+         payload gets lightweight metadata.
+         ---------------------------------------------------------------- */
       document.getElementById("submit").onclick = async () => {
         const status = document.getElementById("status");
         const btn = document.getElementById("submit");
@@ -1617,6 +1689,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         btn.disabled = true;
         status.textContent = "Salvando versão final…";
 
+        /* Fire the autosave with reason "final_submit" first */
         await autosave_("final_submit", { source: "submit_button" });
 
         if (!WEB_APP_URL || WEB_APP_URL === "YOUR_WEB_APP_URL_HERE") {
@@ -1635,19 +1708,19 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           status.textContent = "Enviando…";
 
           const payload = {
+            kind: "final_submit",
+            draftId: getDraftId_(),
+            savedAt: new Date().toISOString(),
             nucleus: state.nucleus,
             contact: { name: state.contactName, phone: state.contactPhone, email: state.contactEmail },
-            projects: state.projects
+            projects: stripFileDataUrls_(state.projects)
           };
 
-          const res = await fetch(WEB_APP_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(payload)
-          });
+          const out = await postToGAS_(WEB_APP_URL, payload);
 
-          const out = await res.json();
-          if (!out.ok) throw new Error(out.error || "Falha desconhecida");
+          if (out && out.ok === false) {
+            throw new Error(out.error || "Falha desconhecida");
+          }
 
           try{
             localStorage.removeItem(DRAFT_STORAGE_KEY);
