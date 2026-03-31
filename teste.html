@@ -383,8 +383,8 @@
   </div>
 
   <script>
-    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbzknHTUhCSpeK8_7dn6OeJQLGbykaK1UVNQmeYMhXaOGqxw6hbKH9QzkqnkSS0fz2p6/exec";
-    const WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbzknHTUhCSpeK8_7dn6OeJQLGbykaK1UVNQmeYMhXaOGqxw6hbKH9QzkqnkSS0fz2p6/exec";
+    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbyQM0SwdO9tAdjop-UvaTVnDBeV8Rf7OArFEDzCRJva1vHkgOMxATAD5K_op_SQc7Vs/exec";
+    const WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbyQM0SwdO9tAdjop-UvaTVnDBeV8Rf7OArFEDzCRJva1vHkgOMxATAD5K_op_SQc7Vs/exec";
 
     const LOGO_SRC = "LOGO_URL_AQUI";
     const GUIDE_URL = "https://livia.work/gmb_general_report_2025/Guia-Preenchimento_Relatorio_2025_v2.pdf";
@@ -602,34 +602,29 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     /* ----------------------------------------------------------------
        FIX 2: Helper to POST to Google Apps Script reliably.
 
-       Google Apps Script deployed web apps return a 302 redirect.
-       Using Content-Type "text/plain" avoids CORS preflight (OPTIONS),
-       since text/plain is a CORS "simple" content type.
+       GAS web apps return a 302 redirect to googleusercontent.com.
+       The browser's CORS check fails on that redirect even with a
+       simple Content-Type, because the 302 hop itself lacks the
+       Access-Control-Allow-Origin header.
 
-       The redirect chain (script.google.com → script.googleusercontent.com)
-       has proper CORS headers, so fetch follows it and returns JSON.
+       The ONLY reliable cross-origin fix is  mode: "no-cors".
+       This means:
+         - The request IS sent and GAS DOES execute doPost().
+         - The response is "opaque": status 0, body unreadable.
+         - fetch() resolves (does NOT throw) on success.
+         - We cannot inspect the server's JSON reply, so we treat
+           a resolved fetch as success.
        ---------------------------------------------------------------- */
     async function postToGAS_(url, bodyObj){
-      const res = await fetch(url, {
+      await fetch(url, {
         method: "POST",
+        mode:   "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(bodyObj),
-        redirect: "follow"
+        body: JSON.stringify(bodyObj)
       });
-
-      /* GAS sometimes returns a 200 with JSON, sometimes the redirect
-         results in an HTML page. Try to parse JSON; if it fails,
-         treat a 2xx status as success. */
-      const text = await res.text();
-      try {
-        return JSON.parse(text);
-      } catch(_) {
-        if (res.ok || res.status === 0) {
-          /* status 0 happens with opaque redirects in some browsers */
-          return { ok: true, _note: "non-json response, assumed ok" };
-        }
-        throw new Error("Resposta inesperada do servidor (HTTP " + res.status + ")");
-      }
+      /* If we reach here, the browser sent the request successfully.
+         With no-cors we cannot read the response, so assume ok. */
+      return { ok: true, _note: "opaque_no_cors" };
     }
 
     function debounceAutosave_(reason, meta){
