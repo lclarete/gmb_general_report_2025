@@ -383,8 +383,8 @@
   </div>
 
   <script>
-    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbweClsDeMpVDCMVQ0Mxiv3R3ZNmNcrbdEXOE20f9WoxpbggwMRjDtNzGkfhUoecIBRt/exec";
-    const WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbweClsDeMpVDCMVQ0Mxiv3R3ZNmNcrbdEXOE20f9WoxpbggwMRjDtNzGkfhUoecIBRt/exec";
+    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbw-FDOaXpsJSgSpAT3FxBZ3IgaQB_e7xs8OlH8r-b2v4adImxMrJ9Fm0aQ8-8Dk6I5z/exec";
+    const WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbw-FDOaXpsJSgSpAT3FxBZ3IgaQB_e7xs8OlH8r-b2v4adImxMrJ9Fm0aQ8-8Dk6I5z/exec";
 
     const LOGO_SRC = "LOGO_URL_AQUI";
     const GUIDE_URL = "https://livia.work/gmb_general_report_2025/Guia-Preenchimento_Relatorio_2025_v2.pdf";
@@ -600,31 +600,47 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     }
 
     /* ----------------------------------------------------------------
-       FIX 2: Helper to POST to Google Apps Script reliably.
+       FIX: POST to Google Apps Script via hidden <form> + <iframe>.
 
-       GAS web apps return a 302 redirect to googleusercontent.com.
-       The browser's CORS check fails on that redirect even with a
-       simple Content-Type, because the 302 hop itself lacks the
-       Access-Control-Allow-Origin header.
+       fetch() fails due to CORS on the GAS 302 redirect chain.
+       Form submissions are EXEMPT from CORS entirely — the browser
+       always sends them, regardless of origin.  We target a hidden
+       iframe so the page doesn't navigate away.
 
-       The ONLY reliable cross-origin fix is  mode: "no-cors".
-       This means:
-         - The request IS sent and GAS DOES execute doPost().
-         - The response is "opaque": status 0, body unreadable.
-         - fetch() resolves (does NOT throw) on success.
-         - We cannot inspect the server's JSON reply, so we treat
-           a resolved fetch as success.
+       GAS receives the JSON string in  e.parameter.payload .
        ---------------------------------------------------------------- */
-    async function postToGAS_(url, bodyObj){
-      await fetch(url, {
-        method: "POST",
-        mode:   "no-cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(bodyObj)
+    function postToGAS_(url, bodyObj){
+      return new Promise(function(resolve){
+        var id = "gas_frame_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+
+        var iframe = document.createElement("iframe");
+        iframe.name = id;
+        iframe.style.display = "none";
+        document.body.appendChild(iframe);
+
+        var form = document.createElement("form");
+        form.method = "POST";
+        form.action = url;
+        form.target = id;
+        form.style.display = "none";
+
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "payload";
+        input.value = JSON.stringify(bodyObj);
+        form.appendChild(input);
+
+        document.body.appendChild(form);
+        form.submit();
+
+        /* Clean up after a delay; we can't read the iframe response
+           (cross-origin), but GAS has received and processed the POST. */
+        setTimeout(function(){
+          try { form.remove(); } catch(e){}
+          try { iframe.remove(); } catch(e){}
+          resolve({ ok: true, _note: "form_iframe" });
+        }, 4000);
       });
-      /* If we reach here, the browser sent the request successfully.
-         With no-cors we cannot read the response, so assume ok. */
-      return { ok: true, _note: "opaque_no_cors" };
     }
 
     function debounceAutosave_(reason, meta){
