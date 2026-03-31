@@ -383,8 +383,7 @@
   </div>
 
   <script>
-    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbwNCaDVKC6FOv-R47Iv5sHjxhL07KUaP_LjWzx_dutXyC1jlgsK1G8Vp3BY9AI7rjhV/exec";
-    const WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbwNCaDVKC6FOv-R47Iv5sHjxhL07KUaP_LjWzx_dutXyC1jlgsK1G8Vp3BY9AI7rjhV/exec";
+    const WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbwMfC-o6kbRQ-LF7U3Rp-DY-6k2f2YxmfeqQANE1QWtjAJJPgewVdcETe9GSOSoFEnY/exec";
 
     const LOGO_SRC = "LOGO_URL_AQUI";
     const GUIDE_URL = "https://livia.work/gmb_general_report_2025/Guia-Preenchimento_Relatorio_2025_v2.pdf";
@@ -526,9 +525,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
     const app = document.getElementById("app");
 
-    let autosaveTimer = null;
-    let lastAutosaveAt = 0;
-
     function getDraftId_(){
       let id = localStorage.getItem(DRAFT_STORAGE_KEY + "_id");
       if (!id) {
@@ -538,13 +534,9 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       return id;
     }
 
-    function makeSubmissionCode_(kind){
-      const base = getDraftId_();
-      const t = Date.now();
-      if (kind === "final_submit") return base + "_FINAL_" + t;
-      return base + "_" + t;
-    }
-
+    /* ================================================================
+       LOCAL DRAFT PERSISTENCE (localStorage only — never hits GAS)
+       ================================================================ */
     function persistLocalDraft_(){
       try{
         localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
@@ -572,44 +564,26 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       }
     }
 
-    /* ----------------------------------------------------------------
-       FIX 1: Strip file dataUrl from projects before sending to GAS.
-       dataUrl blobs can be several MB each and bloat the payload,
-       causing timeouts and "Failed to fetch" errors.
-       ---------------------------------------------------------------- */
-    function stripFileDataUrls_(projects){
-      return (projects || []).map(p => ({
-        ...p,
-        representativePhotoFiles: (p.representativePhotoFiles || []).map(f => ({
-          name: f.name,
-          size: f.size,
-          type: f.type,
-          mimeType: f.mimeType,
-          kind: f.kind,
-          projectIndex: f.projectIndex
-        })),
-        supportMaterialFiles: (p.supportMaterialFiles || []).map(f => ({
-          name: f.name,
-          size: f.size,
-          type: f.type,
-          mimeType: f.mimeType,
-          kind: f.kind,
-          projectIndex: f.projectIndex
-        }))
-      }));
+    /* Debounced local-only save (called on every input) */
+    let _localSaveTimer = null;
+    function debounceSaveLocal_(){
+      clearTimeout(_localSaveTimer);
+      _localSaveTimer = setTimeout(persistLocalDraft_, 400);
     }
 
-    /* ----------------------------------------------------------------
-       FIX: POST to Google Apps Script via hidden <form> + <iframe>.
+    document.addEventListener("input", (ev) => {
+      if (ev.target && ev.target.matches("input, textarea, select")) {
+        debounceSaveLocal_();
+      }
+    }, true);
 
-       fetch() fails due to CORS on the GAS 302 redirect chain.
-       Form submissions are EXEMPT from CORS entirely — the browser
-       always sends them, regardless of origin.  We target a hidden
-       iframe so the page doesn't navigate away.
+    window.addEventListener("beforeunload", persistLocalDraft_);
 
-       GAS receives the JSON string in  e.parameter.payload .
-       ---------------------------------------------------------------- */
-    function postToGAS_(url, bodyObj){
+    /* ================================================================
+       POST TO GAS  (hidden form + iframe — CORS-exempt)
+       Returns a Promise that resolves after a configurable delay.
+       ================================================================ */
+    function postToGAS_(url, bodyObj, waitMs){
       return new Promise(function(resolve){
         var id = "gas_frame_" + Date.now() + "_" + Math.random().toString(36).slice(2);
 
@@ -633,75 +607,90 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         document.body.appendChild(form);
         form.submit();
 
-        /* Clean up after a delay; we can't read the iframe response
-           (cross-origin), but GAS has received and processed the POST. */
         setTimeout(function(){
           try { form.remove(); } catch(e){}
           try { iframe.remove(); } catch(e){}
-          resolve({ ok: true, _note: "form_iframe" });
-        }, 4000);
+          resolve({ ok: true });
+        }, waitMs || 4000);
       });
     }
 
-    function debounceAutosave_(reason, meta){
-      persistLocalDraft_();
-      clearTimeout(autosaveTimer);
-      autosaveTimer = setTimeout(() => autosave_(reason, meta), 700);
+    /* ================================================================
+       STRIP file dataUrls for the main data POST (keeps it small).
+       Files are uploaded separately.
+       ================================================================ */
+    function stripFileDataUrls_(projects){
+      return (projects || []).map(p => ({
+        ...p,
+        representativePhotoFiles: (p.representativePhotoFiles || []).map(f => ({
+          name: f.name, size: f.size, type: f.type,
+          mimeType: f.mimeType, kind: f.kind, projectIndex: f.projectIndex
+        })),
+        supportMaterialFiles: (p.supportMaterialFiles || []).map(f => ({
+          name: f.name, size: f.size, type: f.type,
+          mimeType: f.mimeType, kind: f.kind, projectIndex: f.projectIndex
+        }))
+      }));
     }
 
-    async function autosave_(reason, meta){
-      const now = Date.now();
-      if (now - lastAutosaveAt < 350) return;
-      lastAutosaveAt = now;
-
-      const isFinal = (reason === "final_submit");
-      const kind = isFinal ? "final_submit" : "draft_autosave";
-      const submissionCode = makeSubmissionCode_(isFinal ? "final_submit" : "draft_autosave");
-
-      try{
-        /* FIX 3: Use postToGAS_ helper (text/plain, no preflight)
-           and strip file blobs from the payload. */
-        const out = await postToGAS_(AUTOSAVE_URL, {
-          payload: {
-            kind: kind,
-            submissionCode: submissionCode,
+    /* ================================================================
+       COLLECT all files across all projects for individual upload
+       ================================================================ */
+    function collectAllFiles_(){
+      const files = [];
+      state.projects.forEach((p, idx) => {
+        (p.representativePhotoFiles || []).forEach(f => {
+          if (f.dataUrl) files.push({
             draftId: getDraftId_(),
-            savedAt: new Date().toISOString(),
-            reason: reason || "unknown",
-            meta: meta || {},
-            data: {
-              nucleus: state.nucleus,
-              contact: { name: state.contactName, phone: state.contactPhone, email: state.contactEmail },
-              projects: stripFileDataUrls_(state.projects),
-              stepIndex: state.stepIndex
-            }
-          }
+            projectIndex: idx,
+            projectTitle: p.title || "",
+            fileKind: "repPhoto",
+            fileName: f.name,
+            mimeType: f.mimeType || f.type || "application/octet-stream",
+            dataUrl: f.dataUrl
+          });
         });
-
-        console.log("autosave response:", out);
-
-        const status = document.getElementById("status");
-        if (status) {
-          if (!isFinal) status.textContent = "Rascunho salvo ✅";
-        }
-      }catch(e){
-        const status = document.getElementById("status");
-        if (status) status.textContent = "Falha ao salvar (tentará novamente)";
-        console.error("autosave error:", e);
-      }
+        (p.supportMaterialFiles || []).forEach(f => {
+          if (f.dataUrl) files.push({
+            draftId: getDraftId_(),
+            projectIndex: idx,
+            projectTitle: p.title || "",
+            fileKind: "supportMaterial",
+            fileName: f.name,
+            mimeType: f.mimeType || f.type || "application/octet-stream",
+            dataUrl: f.dataUrl
+          });
+        });
+      });
+      return files;
     }
 
-    document.addEventListener("input", (ev) => {
-      const t = ev.target;
-      if (!t) return;
-      if (t.matches("input, textarea, select")) {
-        debounceAutosave_("field_input", { id: t.id || null, name: t.name || null, type: t.type || null });
-      }
-    }, true);
+    /* ================================================================
+       UPLOAD files one-by-one to GAS (kind: "file_upload")
+       ================================================================ */
+    async function uploadFilesSequentially_(files, statusEl){
+      for (let i = 0; i < files.length; i++){
+        const f = files[i];
+        if (statusEl) statusEl.textContent = `Enviando arquivo ${i + 1} de ${files.length}: ${f.fileName}…`;
 
-    window.addEventListener("beforeunload", () => {
-      persistLocalDraft_();
-    });
+        const payload = {
+          kind: "file_upload",
+          draftId: f.draftId,
+          projectIndex: f.projectIndex,
+          projectTitle: f.projectTitle,
+          fileKind: f.fileKind,
+          fileName: f.fileName,
+          mimeType: f.mimeType,
+          dataUrl: f.dataUrl
+        };
+
+        /* Wait time scales with file size: base 5s + 1s per MB */
+        const sizeMB = (f.dataUrl || "").length / (1024 * 1024);
+        const waitMs = Math.max(5000, Math.round(5000 + sizeMB * 1000));
+
+        await postToGAS_(WEB_APP_URL, payload, waitMs);
+      }
+    }
 
     const MAX_FILE_BYTES = 7 * 1024 * 1024;
 
@@ -829,7 +818,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       `;
       document.getElementById("start").onclick = () => {
         state.stepIndex = 1;
-        debounceAutosave_("page_change", { toStep: state.stepIndex });
+        persistLocalDraft_();
         render();
       };
     }
@@ -874,7 +863,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
       document.getElementById("back").onclick = () => {
         state.stepIndex = 0;
-        debounceAutosave_("page_change", { toStep: state.stepIndex });
+        persistLocalDraft_();
         render();
       };
 
@@ -916,7 +905,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         }));
 
         state.stepIndex = 2;
-        debounceAutosave_("page_change", { toStep: state.stepIndex });
+        persistLocalDraft_();
         render();
       };
     }
@@ -1117,7 +1106,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           } else {
             p.partnerNuclei = p.partnerNuclei.filter(x => x !== name);
           }
-          debounceAutosave_("partner_change", { projectIndex: i });
+          debounceSaveLocal_();
         };
       });
 
@@ -1138,7 +1127,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           } else {
             p.supportReceived = p.supportReceived.filter(x => x !== key);
           }
-          debounceAutosave_("support_change", { projectIndex: i });
+          debounceSaveLocal_();
         };
       });
 
@@ -1195,24 +1184,24 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         `;
 
         activitiesArea.querySelectorAll("input[data-a-date]").forEach(inp => {
-          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-date"))].date = inp.value; debounceAutosave_("activity_edit", { projectIndex:i }); };
+          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-date"))].date = inp.value; debounceSaveLocal_(); };
         });
         activitiesArea.querySelectorAll("input[data-a-enrolled]").forEach(inp => {
-          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-enrolled"))].enrolled = inp.value; debounceAutosave_("activity_edit", { projectIndex:i }); };
+          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-enrolled"))].enrolled = inp.value; debounceSaveLocal_(); };
         });
         activitiesArea.querySelectorAll("input[data-a-participants]").forEach(inp => {
-          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-participants"))].participants = inp.value; debounceAutosave_("activity_edit", { projectIndex:i }); };
+          inp.oninput = () => { p.activities[Number(inp.getAttribute("data-a-participants"))].participants = inp.value; debounceSaveLocal_(); };
         });
         activitiesArea.querySelectorAll("select[data-a-format]").forEach(sel => {
-          sel.onchange = () => { p.activities[Number(sel.getAttribute("data-a-format"))].format = sel.value; debounceAutosave_("activity_edit", { projectIndex:i }); };
+          sel.onchange = () => { p.activities[Number(sel.getAttribute("data-a-format"))].format = sel.value; debounceSaveLocal_(); };
         });
         activitiesArea.querySelectorAll("select[data-a-record]").forEach(sel => {
-          sel.onchange = () => { p.activities[Number(sel.getAttribute("data-a-record"))].participantRecord = sel.value; debounceAutosave_("activity_edit", { projectIndex:i }); };
+          sel.onchange = () => { p.activities[Number(sel.getAttribute("data-a-record"))].participantRecord = sel.value; debounceSaveLocal_(); };
         });
       }
 
       drawActivitiesRows();
-      activitiesInput.oninput = () => { drawActivitiesRows(); debounceAutosave_("activities_count_change", { projectIndex:i }); };
+      activitiesInput.oninput = () => { drawActivitiesRows(); debounceSaveLocal_(); };
 
       const campaignsArea = document.getElementById("campaignsArea");
       const campaignsInput = document.getElementById("onlineCampaignsCount");
@@ -1259,24 +1248,24 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         `;
 
         campaignsArea.querySelectorAll("input[data-c-date]").forEach(inp => {
-          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-date"))].date = inp.value; debounceAutosave_("campaign_edit", { projectIndex:i }); };
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-date"))].date = inp.value; debounceSaveLocal_(); };
         });
         campaignsArea.querySelectorAll("input[data-c-name]").forEach(inp => {
-          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-name"))].name = inp.value; debounceAutosave_("campaign_edit", { projectIndex:i }); };
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-name"))].name = inp.value; debounceSaveLocal_(); };
         });
         campaignsArea.querySelectorAll("input[data-c-posts]").forEach(inp => {
-          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-posts"))].posts = inp.value; debounceAutosave_("campaign_edit", { projectIndex:i }); };
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-posts"))].posts = inp.value; debounceSaveLocal_(); };
         });
         campaignsArea.querySelectorAll("input[data-c-views]").forEach(inp => {
-          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-views"))].views = inp.value; debounceAutosave_("campaign_edit", { projectIndex:i }); };
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-views"))].views = inp.value; debounceSaveLocal_(); };
         });
         campaignsArea.querySelectorAll("input[data-c-interactions]").forEach(inp => {
-          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-interactions"))].interactions = inp.value; debounceAutosave_("campaign_edit", { projectIndex:i }); };
+          inp.oninput = () => { p.onlineCampaigns[Number(inp.getAttribute("data-c-interactions"))].interactions = inp.value; debounceSaveLocal_(); };
         });
       }
 
       drawCampaignRows();
-      campaignsInput.oninput = () => { drawCampaignRows(); debounceAutosave_("campaigns_count_change", { projectIndex:i }); };
+      campaignsInput.oninput = () => { drawCampaignRows(); debounceSaveLocal_(); };
 
       const repPhoto = document.getElementById("repPhoto");
       const repPhotoStatus = document.getElementById("repPhotoStatus");
@@ -1287,7 +1276,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           if (!files.length){
             p.representativePhotoFiles = [];
             repPhotoStatus.textContent = "";
-            debounceAutosave_("file_select", { projectIndex:i, kind:"representativePhoto" });
+            debounceSaveLocal_();
             return;
           }
 
@@ -1302,8 +1291,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
           p.representativePhotoFiles = enriched;
           repPhotoStatus.textContent = `Selecionado: ${enriched[0].name}`;
-
-          debounceAutosave_("file_select", { projectIndex:i, kind:"representativePhoto" });
+          debounceSaveLocal_();
 
         } catch(e){
           p.representativePhotoFiles = [];
@@ -1322,7 +1310,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           if (!files.length){
             p.supportMaterialFiles = [];
             supportFilesStatus.textContent = "";
-            debounceAutosave_("file_select", { projectIndex:i, kind:"supportMaterial" });
+            debounceSaveLocal_();
             return;
           }
 
@@ -1337,8 +1325,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
           p.supportMaterialFiles = enriched;
           supportFilesStatus.textContent = `${enriched.length} arquivo(s) pronto(s) para envio ✅`;
-
-          debounceAutosave_("file_select", { projectIndex:i, kind:"supportMaterial" });
+          debounceSaveLocal_();
 
         } catch(e){
           p.supportMaterialFiles = [];
@@ -1358,7 +1345,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       document.getElementById("back").onclick = () => {
         saveProject(i);
         state.stepIndex = Math.max(1, state.stepIndex - 1);
-        debounceAutosave_("page_change", { toStep: state.stepIndex, projectIndex: i });
+        persistLocalDraft_();
         render();
       };
 
@@ -1405,7 +1392,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         if (state.stepIndex === lastProjectStep) state.stepIndex = lastProjectStep + 1;
         else state.stepIndex += 1;
 
-        debounceAutosave_("page_change", { toStep: state.stepIndex, projectIndex: i });
+        persistLocalDraft_();
         render();
       };
     }
@@ -1464,7 +1451,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
       document.getElementById("back").onclick = () => {
         state.stepIndex = 2 + state.projects.length - 1;
-        debounceAutosave_("page_change", { toStep: state.stepIndex });
+        persistLocalDraft_();
         render();
       };
 
@@ -1489,7 +1476,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         const lastProjectStep = 2 + state.projects.length - 1;
         state.stepIndex = lastProjectStep + 2;
 
-        debounceAutosave_("page_change", { toStep: state.stepIndex });
+        persistLocalDraft_();
         render();
       };
     }
@@ -1539,20 +1526,12 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           supportReceived: p.supportReceived || [],
           notes: p.notes || "",
           representativePhotoFiles: (p.representativePhotoFiles || []).map(f => ({
-            name: f.name,
-            size: f.size,
-            type: f.type,
-            mimeType: f.mimeType,
-            kind: f.kind,
-            projectIndex: f.projectIndex
+            name: f.name, size: f.size, type: f.type,
+            mimeType: f.mimeType, kind: f.kind, projectIndex: f.projectIndex
           })),
           supportMaterialFiles: (p.supportMaterialFiles || []).map(f => ({
-            name: f.name,
-            size: f.size,
-            type: f.type,
-            mimeType: f.mimeType,
-            kind: f.kind,
-            projectIndex: f.projectIndex
+            name: f.name, size: f.size, type: f.type,
+            mimeType: f.mimeType, kind: f.kind, projectIndex: f.projectIndex
           }))
         }))
       };
@@ -1620,12 +1599,16 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         </tr>
       `).join("");
 
+      /* Count total files for display */
+      const allFiles = collectAllFiles_();
+
       app.innerHTML = `
         <div class="title">Revisão</div>
         <p class="muted">Confira antes de enviar a versão final.</p>
 
         <div class="muted"><b>Núcleo responsável pela iniciativa:</b> ${escapeHtml(state.nucleus)}</div>
         <div class="muted"><b>Responsável:</b> ${escapeHtml(state.contactName)} • ${escapeHtml(state.contactPhone)} • ${escapeHtml(state.contactEmail)}</div>
+        ${allFiles.length ? `<div class="muted"><b>Arquivos anexados:</b> ${allFiles.length} arquivo(s) serão enviados ao Google Drive.</div>` : ""}
 
         <table>
           <thead>
@@ -1655,7 +1638,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       document.getElementById("back").onclick = () => {
         const lastProjectStep = 2 + state.projects.length - 1;
         state.stepIndex = lastProjectStep + 1;
-        debounceAutosave_("page_change", { toStep: state.stepIndex });
+        persistLocalDraft_();
         render();
       };
 
@@ -1677,51 +1660,55 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         }
       };
 
-      /* ----------------------------------------------------------------
-         FIX 4: Final submit — use postToGAS_ helper and strip file blobs.
-         Files are kept in localStorage / ZIP export only; the GAS
-         payload gets lightweight metadata.
-         ---------------------------------------------------------------- */
+      /* ================================================================
+         FINAL SUBMIT:
+         1) POST form data (without file blobs) → creates the Sheet row
+         2) POST each file individually → saves to Google Drive
+         3) Navigate to "done" screen
+         ================================================================ */
       document.getElementById("submit").onclick = async () => {
         const status = document.getElementById("status");
         const btn = document.getElementById("submit");
+        const backBtn = document.getElementById("back");
+        const zipBtn = document.getElementById("downloadZip");
 
         btn.disabled = true;
-        status.textContent = "Salvando versão final…";
-
-        /* Fire the autosave with reason "final_submit" first */
-        await autosave_("final_submit", { source: "submit_button" });
-
-        if (!WEB_APP_URL || WEB_APP_URL === "YOUR_WEB_APP_URL_HERE") {
-          try{
-            localStorage.removeItem(DRAFT_STORAGE_KEY);
-            localStorage.removeItem(DRAFT_STORAGE_KEY + "_id");
-          }catch(e){}
-
-          status.textContent = "";
-          state.stepIndex = (2 + state.projects.length - 1) + 3;
-          render();
-          return;
-        }
+        backBtn.disabled = true;
+        zipBtn.disabled = true;
 
         try{
-          status.textContent = "Enviando…";
+          /* Step 1: Send main data (lightweight, no file blobs) */
+          status.textContent = "Enviando dados do formulário…";
 
-          const payload = {
-            kind: "final_submit",
-            draftId: getDraftId_(),
-            savedAt: new Date().toISOString(),
-            nucleus: state.nucleus,
-            contact: { name: state.contactName, phone: state.contactPhone, email: state.contactEmail },
-            projects: stripFileDataUrls_(state.projects)
+          const mainPayload = {
+            payload: {
+              kind: "final_submit",
+              submissionCode: getDraftId_() + "_FINAL_" + Date.now(),
+              draftId: getDraftId_(),
+              savedAt: new Date().toISOString(),
+              reason: "final_submit",
+              meta: {},
+              data: {
+                nucleus: state.nucleus,
+                contact: { name: state.contactName, phone: state.contactPhone, email: state.contactEmail },
+                projects: stripFileDataUrls_(state.projects),
+                stepIndex: state.stepIndex
+              }
+            }
           };
 
-          const out = await postToGAS_(WEB_APP_URL, payload);
+          await postToGAS_(WEB_APP_URL, mainPayload, 5000);
+          status.textContent = "Dados do formulário enviados ✅";
 
-          if (out && out.ok === false) {
-            throw new Error(out.error || "Falha desconhecida");
+          /* Step 2: Upload files one by one */
+          const filesToUpload = collectAllFiles_();
+
+          if (filesToUpload.length > 0) {
+            await uploadFilesSequentially_(filesToUpload, status);
+            status.textContent = `Todos os ${filesToUpload.length} arquivo(s) enviados ✅`;
           }
 
+          /* Step 3: Clean up and go to done screen */
           try{
             localStorage.removeItem(DRAFT_STORAGE_KEY);
             localStorage.removeItem(DRAFT_STORAGE_KEY + "_id");
@@ -1730,8 +1717,11 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
           status.textContent = "";
           state.stepIndex = (2 + state.projects.length - 1) + 3;
           render();
+
         } catch(e){
           btn.disabled = false;
+          backBtn.disabled = false;
+          zipBtn.disabled = false;
           status.textContent = "Erro ao enviar: " + e.message;
           alert("Erro ao enviar: " + e.message);
         }
@@ -1751,7 +1741,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         localStorage.removeItem(DRAFT_STORAGE_KEY + "_id");
       }catch(e){}
 
-      debounceAutosave_("restart", { toStep: state.stepIndex });
+      persistLocalDraft_();
       render();
     }
 
@@ -1832,7 +1822,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
 
     tryRestoreLocalDraft_();
     render();
-    debounceAutosave_("open_form", { restored: true });
   </script>
 </body>
 </html>
