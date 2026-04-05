@@ -1,4 +1,4 @@
-  <!doctype html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -377,13 +377,41 @@
 </head>
 
 <body>
+  <div id="mobileBlock" style="display:none;">
+    <div style="max-width:560px; margin:60px auto; padding:24px; text-align:center; font-family:system-ui,-apple-system,sans-serif;">
+      <div style="font-size:48px; margin-bottom:16px;">💻</div>
+      <h1 style="font-size:24px; color:#0b2b4d; margin:0 0 12px;">Formulário disponível apenas no computador</h1>
+      <p style="font-size:16px; color:#5f6368; line-height:1.6; margin:0 0 20px;">
+        Este formulário não é compatível com dispositivos móveis.<br>
+        Por favor, acesse pelo navegador do seu computador (desktop ou notebook).
+      </p>
+      <a href="https://livia.work/gmb_general_report_2025/Guia-Preenchimento_Relatorio_2025_v2.pdf"
+         style="color:#2aa7b3; font-weight:600; font-size:15px;"
+         target="_blank" rel="noopener noreferrer">
+        Enquanto isso, leia o Guia de Preenchimento
+      </a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function(){
+      var isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                  || (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+      if (isMobile) {
+        document.getElementById("mobileBlock").style.display = "block";
+        var wrap = document.querySelector(".wrap");
+        if (wrap) wrap.style.display = "none";
+      }
+    });
+  </script>
   <div class="wrap">
     <h1>Pesquisa sobre projetos realizados em 2025</h1>
     <div id="app" class="card"></div>
   </div>
 
   <script>
-    /* URLs no longer needed — form is served by GAS and uses google.script.run */
+    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbwCHKMu-5abKhfnQs0FsixWllpq9kcSauqK8HPCIMigMHb1kaTcrEBM43dS-MYsN06s/exec";
+    const WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbwCHKMu-5abKhfnQs0FsixWllpq9kcSauqK8HPCIMigMHb1kaTcrEBM43dS-MYsN06s/exec";
 
     const LOGO_SRC = "LOGO_URL_AQUI";
     const GUIDE_URL = "https://livia.work/gmb_general_report_2025/Guia-Preenchimento_Relatorio_2025_v2.pdf";
@@ -599,23 +627,37 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     }
 
     /* ----------------------------------------------------------------
-       POST to Google Apps Script via google.script.run.
-
-       Since the form is served by GAS itself (via doGet + HtmlService),
-       we can call server-side functions directly. No CORS, no fetch,
-       no cross-origin issues. Works on all browsers including iOS.
+       POST to GAS via hidden form + iframe (works on desktop).
        ---------------------------------------------------------------- */
     function postToGAS_(url, bodyObj){
-      return new Promise(function(resolve, reject){
-        google.script.run
-          .withSuccessHandler(function(result){
-            resolve(result || { ok: true });
-          })
-          .withFailureHandler(function(err){
-            console.error("google.script.run error:", err);
-            reject(new Error(String(err.message || err)));
-          })
-          .processSubmission(bodyObj);
+      return new Promise(function(resolve){
+        var id = "gas_frame_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+
+        var iframe = document.createElement("iframe");
+        iframe.name = id;
+        iframe.style.display = "none";
+        document.body.appendChild(iframe);
+
+        var form = document.createElement("form");
+        form.method = "POST";
+        form.action = url;
+        form.target = id;
+        form.style.display = "none";
+
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "payload";
+        input.value = JSON.stringify(bodyObj);
+        form.appendChild(input);
+
+        document.body.appendChild(form);
+        form.submit();
+
+        setTimeout(function(){
+          try { form.remove(); } catch(e){}
+          try { iframe.remove(); } catch(e){}
+          resolve({ ok: true });
+        }, 4000);
       });
     }
 
@@ -635,9 +677,9 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       const submissionCode = makeSubmissionCode_(isFinal ? "final_submit" : "draft_autosave");
 
       try{
-        /* Use google.script.run via postToGAS_ helper.
-           File blobs are stripped from the payload. */
-        const out = await postToGAS_(null, {
+        /* FIX 3: Use postToGAS_ helper (text/plain, no preflight)
+           and strip file blobs from the payload. */
+        const out = await postToGAS_(AUTOSAVE_URL, {
           payload: {
             kind: kind,
             submissionCode: submissionCode,
@@ -1668,6 +1710,18 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         /* Fire the autosave with reason "final_submit" first */
         await autosave_("final_submit", { source: "submit_button" });
 
+        if (!WEB_APP_URL || WEB_APP_URL === "YOUR_WEB_APP_URL_HERE") {
+          try{
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+            localStorage.removeItem(DRAFT_STORAGE_KEY + "_id");
+          }catch(e){}
+
+          status.textContent = "";
+          state.stepIndex = (2 + state.projects.length - 1) + 3;
+          render();
+          return;
+        }
+
         try{
           status.textContent = "Enviando…";
 
@@ -1680,7 +1734,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
             projects: stripFileDataUrls_(state.projects)
           };
 
-          const out = await postToGAS_(null, payload);
+          const out = await postToGAS_(WEB_APP_URL, payload);
 
           if (out && out.ok === false) {
             throw new Error(out.error || "Falha desconhecida");
