@@ -1,0 +1,200 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GAS Mobile Test</title>
+  <style>
+    body { font-family: system-ui; max-width: 600px; margin: 20px auto; padding: 16px; }
+    button { display: block; width: 100%; padding: 16px; font-size: 16px;
+             cursor: pointer; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; }
+    button:active { background: #e0e0e0; }
+    #log { background: #f5f5f5; padding: 12px; border-radius: 8px; margin-top: 16px;
+           white-space: pre-wrap; font-family: monospace; font-size: 12px;
+           min-height: 120px; max-height: 400px; overflow: auto; }
+    .ok { color: green; } .err { color: red; } .info { color: #555; }
+    h3 { margin: 20px 0 4px; }
+  </style>
+</head>
+<body>
+  <h2>GAS Mobile Test</h2>
+  <p>Test each button. After each one, check the Google Sheet for a new row.</p>
+
+  <h3>Method A: sendBeacon + FormData</h3>
+  <button onclick="testSendBeaconFormData()">A: sendBeacon FormData</button>
+
+  <h3>Method B: sendBeacon + Blob</h3>
+  <button onclick="testSendBeaconBlob()">B: sendBeacon Blob</button>
+
+  <h3>Method C: fetch no-cors + URLSearchParams</h3>
+  <button onclick="testFetchNoCorsForm()">C: fetch no-cors URLSearchParams</button>
+
+  <h3>Method D: form + iframe</h3>
+  <button onclick="testFormIframe()">D: form + iframe</button>
+
+  <h3>Method E: Image ping (GET, small payload)</h3>
+  <button onclick="testImagePing()">E: Image ping</button>
+
+  <div id="log"></div>
+
+  <script>
+    var GAS_URL = "https://script.google.com/macros/s/AKfycbwCHKMu-5abKhfnQs0FsixWllpq9kcSauqK8HPCIMigMHb1kaTcrEBM43dS-MYsN06s/exec";
+    var logEl = document.getElementById("log");
+
+    function log(msg, cls) {
+      var line = document.createElement("div");
+      line.className = cls || "info";
+      line.textContent = "[" + new Date().toLocaleTimeString() + "] " + msg;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function makePayload(method) {
+      return {
+        payload: {
+          kind: "connection_test",
+          submissionCode: "MOBILE_" + method + "_" + Date.now(),
+          draftId: "mobile_test_" + method,
+          savedAt: new Date().toISOString(),
+          reason: "mobile_test_" + method,
+          meta: {},
+          data: {
+            nucleus: "Nova York (ID_096)",
+            contact: { name: "Mobile Test " + method, phone: "000", email: "m@test.com" },
+            projects: [],
+            stepIndex: 0
+          }
+        }
+      };
+    }
+
+    /* ============================================================
+       A: navigator.sendBeacon with FormData
+       ============================================================ */
+    function testSendBeaconFormData() {
+      log("--- A: sendBeacon + FormData ---");
+      try {
+        if (!navigator.sendBeacon) { log("sendBeacon NOT supported!", "err"); return; }
+
+        var obj = makePayload("A_beacon_formdata");
+        var fd = new FormData();
+        fd.append("payload", JSON.stringify(obj));
+
+        var ok = navigator.sendBeacon(GAS_URL, fd);
+        log("sendBeacon returned: " + ok, ok ? "ok" : "err");
+        log("Check sheet for draftId = mobile_test_A_beacon_formdata");
+      } catch(e) {
+        log("ERROR: " + e.message, "err");
+      }
+    }
+
+    /* ============================================================
+       B: navigator.sendBeacon with Blob (form-urlencoded)
+       ============================================================ */
+    function testSendBeaconBlob() {
+      log("--- B: sendBeacon + Blob ---");
+      try {
+        if (!navigator.sendBeacon) { log("sendBeacon NOT supported!", "err"); return; }
+
+        var obj = makePayload("B_beacon_blob");
+        var body = "payload=" + encodeURIComponent(JSON.stringify(obj));
+        var blob = new Blob([body], { type: "application/x-www-form-urlencoded" });
+
+        var ok = navigator.sendBeacon(GAS_URL, blob);
+        log("sendBeacon returned: " + ok, ok ? "ok" : "err");
+        log("Check sheet for draftId = mobile_test_B_beacon_blob");
+      } catch(e) {
+        log("ERROR: " + e.message, "err");
+      }
+    }
+
+    /* ============================================================
+       C: fetch no-cors + URLSearchParams
+       ============================================================ */
+    function testFetchNoCorsForm() {
+      log("--- C: fetch no-cors + URLSearchParams ---");
+      try {
+        var obj = makePayload("C_fetch_nocors");
+        var params = new URLSearchParams();
+        params.append("payload", JSON.stringify(obj));
+
+        fetch(GAS_URL, {
+          method: "POST",
+          mode: "no-cors",
+          body: params
+        })
+        .then(function(res) {
+          log("fetch resolved. type=" + res.type + " status=" + res.status, "ok");
+          log("Check sheet for draftId = mobile_test_C_fetch_nocors");
+        })
+        .catch(function(err) {
+          log("fetch REJECTED: " + err.message, "err");
+        });
+      } catch(e) {
+        log("ERROR: " + e.message, "err");
+      }
+    }
+
+    /* ============================================================
+       D: Hidden form + iframe
+       ============================================================ */
+    function testFormIframe() {
+      log("--- D: form + iframe ---");
+      try {
+        var obj = makePayload("D_form_iframe");
+        var id = "testframe_" + Date.now();
+
+        var iframe = document.createElement("iframe");
+        iframe.name = id;
+        iframe.style.display = "none";
+        document.body.appendChild(iframe);
+
+        var form = document.createElement("form");
+        form.method = "POST";
+        form.action = GAS_URL;
+        form.target = id;
+        form.style.display = "none";
+
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "payload";
+        input.value = JSON.stringify(obj);
+        form.appendChild(input);
+
+        document.body.appendChild(form);
+        form.submit();
+        log("form.submit() called", "ok");
+
+        setTimeout(function(){
+          try { form.remove(); iframe.remove(); } catch(e){}
+          log("Cleanup done. Check sheet for draftId = mobile_test_D_form_iframe");
+        }, 5000);
+      } catch(e) {
+        log("ERROR: " + e.message, "err");
+      }
+    }
+
+    /* ============================================================
+       E: Image ping via doGet (GET request, tiny payload)
+       This tests if the browser can reach GAS at all.
+       ============================================================ */
+    function testImagePing() {
+      log("--- E: Image ping (GET) ---");
+      try {
+        var t = Date.now();
+        var img = new Image();
+        img.onload = function() { log("Image loaded (GAS is reachable)", "ok"); };
+        img.onerror = function() { log("Image error (but request may have reached GAS)", "info"); };
+        img.src = GAS_URL + "?ping=E_image_" + t + "&t=" + t;
+        log("Image src set — check sheet for a doGet log if you have one");
+        log("This only tests reachability, not POST data.");
+      } catch(e) {
+        log("ERROR: " + e.message, "err");
+      }
+    }
+
+    log("Page loaded. User agent: " + navigator.userAgent);
+    log("Ready — tap a button to test.");
+  </script>
+</body>
+</html>
