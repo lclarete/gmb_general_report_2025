@@ -1,4 +1,4 @@
-<!doctype html>
+  <!doctype html>
 <html lang="pt-BR">
 <head>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -383,8 +383,7 @@
   </div>
 
   <script>
-    const AUTOSAVE_URL = "https://script.google.com/macros/s/AKfycbxPtpsGNhKeiS30Jlzwjbh5Pk7V5N7SNp1x526XWe3RboghkP0dJqP99WG6VwT-WXfl/exec";
-    const WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbxPtpsGNhKeiS30Jlzwjbh5Pk7V5N7SNp1x526XWe3RboghkP0dJqP99WG6VwT-WXfl/exec";
+    /* URLs no longer needed — form is served by GAS and uses google.script.run */
 
     const LOGO_SRC = "LOGO_URL_AQUI";
     const GUIDE_URL = "https://livia.work/gmb_general_report_2025/Guia-Preenchimento_Relatorio_2025_v2.pdf";
@@ -600,28 +599,23 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
     }
 
     /* ----------------------------------------------------------------
-       POST to Google Apps Script via fetch + no-cors + form-encoded body.
+       POST to Google Apps Script via google.script.run.
 
-       Why this works:
-       - no-cors: browser skips CORS checks entirely, POST goes through
-       - URLSearchParams body: browser auto-sets Content-Type to
-         application/x-www-form-urlencoded (a CORS-safe "simple" type)
-       - GAS receives the data in  e.parameter.payload
-       - No hidden iframes = works on mobile Safari (which blocks
-         cross-origin iframe form submissions via ITP)
-       - GAS executes doPost() when it receives the initial POST;
-         the 302 redirect is only for the response, which we ignore.
+       Since the form is served by GAS itself (via doGet + HtmlService),
+       we can call server-side functions directly. No CORS, no fetch,
+       no cross-origin issues. Works on all browsers including iOS.
        ---------------------------------------------------------------- */
     function postToGAS_(url, bodyObj){
-      var params = new URLSearchParams();
-      params.append("payload", JSON.stringify(bodyObj));
-
-      return fetch(url, {
-        method: "POST",
-        mode:   "no-cors",
-        body:   params
-      }).then(function(){
-        return { ok: true, _note: "nocors_urlencoded" };
+      return new Promise(function(resolve, reject){
+        google.script.run
+          .withSuccessHandler(function(result){
+            resolve(result || { ok: true });
+          })
+          .withFailureHandler(function(err){
+            console.error("google.script.run error:", err);
+            reject(new Error(String(err.message || err)));
+          })
+          .processSubmission(bodyObj);
       });
     }
 
@@ -641,9 +635,9 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       const submissionCode = makeSubmissionCode_(isFinal ? "final_submit" : "draft_autosave");
 
       try{
-        /* FIX 3: Use postToGAS_ helper (text/plain, no preflight)
-           and strip file blobs from the payload. */
-        const out = await postToGAS_(AUTOSAVE_URL, {
+        /* Use google.script.run via postToGAS_ helper.
+           File blobs are stripped from the payload. */
+        const out = await postToGAS_(null, {
           payload: {
             kind: kind,
             submissionCode: submissionCode,
@@ -1674,18 +1668,6 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
         /* Fire the autosave with reason "final_submit" first */
         await autosave_("final_submit", { source: "submit_button" });
 
-        if (!WEB_APP_URL || WEB_APP_URL === "YOUR_WEB_APP_URL_HERE") {
-          try{
-            localStorage.removeItem(DRAFT_STORAGE_KEY);
-            localStorage.removeItem(DRAFT_STORAGE_KEY + "_id");
-          }catch(e){}
-
-          status.textContent = "";
-          state.stepIndex = (2 + state.projects.length - 1) + 3;
-          render();
-          return;
-        }
-
         try{
           status.textContent = "Enviando…";
 
@@ -1698,7 +1680,7 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
             projects: stripFileDataUrls_(state.projects)
           };
 
-          const out = await postToGAS_(WEB_APP_URL, payload);
+          const out = await postToGAS_(null, payload);
 
           if (out && out.ok === false) {
             throw new Error(out.error || "Falha desconhecida");
