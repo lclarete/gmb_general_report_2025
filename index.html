@@ -40,6 +40,52 @@
       margin: 0;
     }
 
+    /* ── Mobile-only overlay ── */
+    .mobile-overlay{
+      display: none;
+    }
+    @media (max-width: 768px){
+      .mobile-overlay{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: var(--bg);
+        padding: 32px 24px;
+      }
+      .mobile-overlay .mo-logo{
+        width: 220px;
+        max-width: 80%;
+        border-radius: 8px;
+        border: 1px solid rgba(0,0,0,0.06);
+        margin-bottom: 28px;
+      }
+      .mobile-overlay .mo-text{
+        font-size: 16px;
+        line-height: 1.7;
+        color: var(--muted);
+        max-width: 480px;
+      }
+      .mobile-overlay .mo-cta{
+        margin-top: 8px;
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--navy);
+        line-height: 1.5;
+      }
+      .mobile-overlay .mo-icon{
+        font-size: 40px;
+        margin-bottom: 10px;
+      }
+      .wrap{
+        display: none;
+      }
+    }
+
     .wrap{
       max-width: 980px;
       margin: 28px auto;
@@ -377,6 +423,21 @@
 </head>
 
 <body>
+
+  <!-- Mobile-only: ask user to switch to desktop -->
+  <div class="mobile-overlay">
+    <img class="mo-logo" src="https://raw.githubusercontent.com/lclarete/gmb_general_report_2025/refs/heads/main/GMB_Logo.png" alt="Grupo Mulheres do Brasil" />
+    <div class="mo-icon">🖥️</div>
+    <div class="mo-text">
+      Obrigada por fazer parte do Grupo Mulheres do Brasil e por liderar ações que geram impacto real nos territórios. Cada iniciativa realizada fortalece o nosso propósito coletivo e o protagonismo feminino.
+      <br><br>
+      Registrar essas ações é fundamental. É por meio da organização, da visibilidade e da transparência que demonstramos a força do nosso trabalho, fortalecemos a credibilidade institucional do Grupo e ampliamos nosso impacto.
+    </div>
+    <div class="mo-cta">
+      Por favor, abra este link no seu computador ou desktop.
+    </div>
+  </div>
+
   <div class="wrap">
     <h1>Pesquisa sobre projetos realizados em 2025</h1>
     <div id="app" class="card"></div>
