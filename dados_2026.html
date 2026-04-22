@@ -454,7 +454,6 @@
 
     const LOGO_SRC = "https://raw.githubusercontent.com/lclarete/gmb_general_report_2025/refs/heads/main/GMB_Logo.png";
     const GUIDE_URL = "https://livia.work/gmb_general_report_2025/Guia-Preenchimento_Relatorio_2025_v2.pdf";
-    const YT_SHORTS_URL = "https://www.youtube.com/shorts/DboSHJkwrcc";
 
     const DEFAULT_LOGO_PLACEHOLDER =
       "https://raw.githubusercontent.com/lclarete/gmb_general_report_2025/refs/heads/main/GMB_Logo.png";
@@ -474,9 +473,7 @@ As informações compartilhadas irão compor o Relatório de Atividades 2026, um
 
 Agradecemos pela sua dedicação e colaboração.
 
-Acesse aqui o GUIA PARA PREENCHIMENTO.
-
-Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdobrasil.org.br ou parcerias@grupomulheresdobrasil.org.br.`;
+Acesse aqui o GUIA PARA PREENCHIMENTO.`;
 
     const CAUSE_OPTIONS = [
       "Selecione…",
@@ -866,60 +863,29 @@ Em caso de dúvidas, entre em contato pelo e-mail internacional@grupomulheresdob
       return renderIntro();
     }
 
-    function youtubeEmbedFromShorts_(url){
-      try{
-        const u = new URL(url);
-        const parts = u.pathname.split("/").filter(Boolean);
-        const id = parts[0] === "shorts" ? parts[1] : "";
-        if (!id) return "";
-        return "https://www.youtube.com/embed/" + id;
-      }catch(e){
-        return "";
-      }
-    }
-
     function renderIntro(){
       const guideLine = "Acesse aqui o GUIA PARA PREENCHIMENTO.";
       const parts = INTRO_TEXT.split(guideLine);
 
       const logoToUse = (LOGO_SRC && LOGO_SRC !== "LOGO_URL_AQUI") ? LOGO_SRC : DEFAULT_LOGO_PLACEHOLDER;
-      const ytEmbed = youtubeEmbedFromShorts_(YT_SHORTS_URL);
 
       app.innerHTML = `
         <div class="introHeader">
           <img class="logo" src="${escapeHtml(logoToUse)}" alt="Grupo Mulheres do Brasil" />
         </div>
 
-        <div class="introGrid">
-          <div>
-            <div class="introText">${escapeHtml(parts[0] || "")}</div>
+        <div class="introText">${escapeHtml(parts[0] || "")}</div>
 
-            <div class="introLinks">
-              <a href="${escapeHtml(GUIDE_URL)}" target="_blank" rel="noopener noreferrer">
-                ANTES DE PROSSEGUIR, LEIA O GUIA DE PREENCHIMENTO AQUI
-              </a>
-            </div>
+        <div class="introLinks">
+          <a href="${escapeHtml(GUIDE_URL)}" target="_blank" rel="noopener noreferrer">
+            ANTES DE PROSSEGUIR, LEIA O GUIA DE PREENCHIMENTO AQUI
+          </a>
+        </div>
 
-            <div class="introText">${escapeHtml(parts[1] || "")}</div>
+        <div class="introText">${escapeHtml(parts[1] || "")}</div>
 
-            <div class="buttons">
-              <button class="primary" id="start">Continuar</button>
-            </div>
-          </div>
-
-          <div class="videoCard">
-            ${ytEmbed ? `
-              <div class="muted" style="margin-bottom:10px;">Vídeo rápido (YouTube)</div>
-              <div class="videoWrap">
-                <iframe
-                  src="${escapeHtml(ytEmbed)}"
-                  title="YouTube video"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowfullscreen>
-                </iframe>
-              </div>
-            ` : `<div class="muted">Vídeo indisponível.</div>`}
-          </div>
+        <div class="buttons">
+          <button class="primary" id="start">Continuar</button>
         </div>
       `;
       document.getElementById("start").onclick = () => {
