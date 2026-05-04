@@ -44,47 +44,6 @@
     .mobile-overlay{
       display: none;
     }
-    /* @media (max-width: 768px){
-      .mobile-overlay{
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        background: var(--bg);
-        padding: 32px 24px;
-      }
-      .mobile-overlay .mo-logo{
-        width: 220px;
-        max-width: 80%;
-        border-radius: 8px;
-        border: 1px solid rgba(0,0,0,0.06);
-        margin-bottom: 28px;
-      }
-      .mobile-overlay .mo-text{
-        font-size: 16px;
-        line-height: 1.7;
-        color: var(--muted);
-        max-width: 480px;
-      }
-      .mobile-overlay .mo-cta{
-        margin-top: 8px;
-        font-size: 17px;
-        font-weight: 700;
-        color: var(--navy);
-        line-height: 1.5;
-      }
-      .mobile-overlay .mo-icon{
-        font-size: 40px;
-        margin-bottom: 10px;
-      }
-      .wrap{
-        display: none;
-      }
-    } */
 
     .wrap{
       max-width: 980px;
@@ -435,9 +394,7 @@
     <img class="mo-logo" src="https://raw.githubusercontent.com/lclarete/gmb_general_report_2025/refs/heads/main/GMB_Logo.png" alt="Grupo Mulheres do Brasil" />
     <div class="mo-icon">🖥️</div>
     <div class="mo-text">
-      Obrigada por fazer parte do Grupo Mulheres do Brasil e por liderar ações que geram impacto real nos territórios. Cada iniciativa realizada fortalece o nosso propósito coletivo e o protagonismo feminino.
-      <br><br>
-      Registrar essas ações é fundamental. É por meio da organização, da visibilidade e da transparência que demonstramos a força do nosso trabalho, fortalecemos a credibilidade institucional do Grupo e ampliamos nosso impacto.
+      Obrigada por fazer parte do Grupo Mulheres do Brasil NY e por liderar ações que geram impacto em nossa comunidade.
     </div>
     <div class="mo-cta">
       Por favor, abra este link no seu computador ou desktop.
@@ -458,20 +415,20 @@
     const DEFAULT_LOGO_PLACEHOLDER =
       "https://raw.githubusercontent.com/lclarete/gmb_general_report_2025/refs/heads/main/GMB_Logo.png";
 
-    // Storage key bumped to 2026 to avoid restoring 2025 drafts into this form.
     const DRAFT_STORAGE_KEY = "gmb_2026_form_draft_v1";
 
+    // ── CHANGE 1: Updated intro text ──────────────────────────────────────────
     const INTRO_TEXT = `Olá!
 
-Obrigada por fazer parte do Grupo Mulheres do Brasil e por liderar ações que geram impacto real nos territórios. Cada iniciativa realizada fortalece o nosso propósito coletivo e o protagonismo feminino.
+Obrigada por fazer parte do Grupo Mulheres do Brasil NY e por liderar ações que geram impacto em nossa comunidade. Registrar essas iniciativas é fundamental. É por meio da organização, da visibilidade e da transparência que demonstramos a força do nosso trabalho, fortalecemos a credibilidade institucional do Grupo Mulheres do Brasil NY e ampliamos nosso impacto.
 
-Registrar essas ações é fundamental. É por meio da organização, da visibilidade e da transparência que demonstramos a força do nosso trabalho, fortalecemos a credibilidade institucional do Grupo e ampliamos nosso impacto.
+Este formulário tem como objetivo reunir informações sobre todas as iniciativas realizadas pelo seu comitê ao longo de 2026. O formulário possibilita o registro de mais de um projeto em um único envio, tornando o processo mais simples e eficiente.
 
-Este formulário reúne as informações sobre as iniciativas realizadas pelo seu Núcleo em 2026. O preenchimento está mais simples e permite registrar mais de um projeto em um único envio, facilitando o processo.
-
-As informações compartilhadas irão compor o Relatório de Atividades 2026, um instrumento de registro, visibilidade e memória institucional, que reconhece e valoriza o impacto gerado pelos Núcleos.
+As informações compartilhadas irão compor o Relatório de Atividades 2026 — um instrumento de registro, visibilidade e memória institucional, que reconhece e valoriza o impacto gerado pelos comitês.
 
 Agradecemos pela sua dedicação e colaboração.
+
+Estamos à disposição para esclarecer qualquer dúvida.
 
 Acesse aqui o GUIA PARA PREENCHIMENTO.`;
 
@@ -501,6 +458,7 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
       "Vozes"
     ];
 
+    // ── CHANGE 3: Added "Voluntárias" to target audience options ─────────────
     const TARGET_AUDIENCE_OPTIONS = [
       "Selecione…",
       "Crianças",
@@ -508,14 +466,10 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
       "Jovens",
       "Adultos",
       "Idosos",
-      "Todos"
+      "Todos",
+      "Voluntárias"
     ];
 
-    // ──────────────────────────────────────────────────────────────────────
-    // TODO (Li): substituir FREQUENCY_OPTIONS pela lista completa e revisada.
-    // Pendente: incluir "Aleatória" e quaisquer outras opções da lista final.
-    // Aguardando lista oficial para sobrescrever este array.
-    // ──────────────────────────────────────────────────────────────────────
     const FREQUENCY_OPTIONS = [
       { value: "", label: "Selecione…" },
       { value: "semanal", label: "Semanal" },
@@ -540,11 +494,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
       { value: "presencial", label: "Presencial" }
     ];
 
-    // ──────────────────────────────────────────────────────────────────────
-    // TODO (Li): revisar PARTICIPANT_RECORD_OPTIONS.
-    // Objetivo: opções mais coerentes para distinguir INSCRITOS vs PARTICIPANTES.
-    // Aguardando lista oficial para sobrescrever este array.
-    // ──────────────────────────────────────────────────────────────────────
     const PARTICIPANT_RECORD_OPTIONS = [
       { value: "registro_formal_manual", label: "Registro formal manual (lista de presença, planilha de acompanhamento, ficha de inscrição física)" },
       { value: "plataformas_digitais", label: "Registro em plataformas digitais (Eventbrite, Zoom, ferramentas similares)" },
@@ -589,8 +538,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
     }
     const NUCLEUS_OPTIONS = buildOptions_(NUCLEUS_RAW);
 
-    // Lista oficial dos Comitês do GMB.
-    // buildOptions_ ordena alfabeticamente, então a ordem aqui é só pra leitura.
     const COMMITTEE_RAW = [
       "Combate à Violência",
       "Artes",
@@ -605,7 +552,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
     const COMMITTEE_REQUIRED = true;
     const COMMITTEE_OPTIONS = buildOptions_(COMMITTEE_RAW);
 
-    // Núcleo fixado para este formulário — campo exibido mas não editável.
     const LOCKED_NUCLEUS = "Nova York (ID_096)";
 
     const state = {
@@ -629,9 +575,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
       return id;
     }
 
-    /* ================================================================
-       LOCAL DRAFT PERSISTENCE (localStorage only — never hits GAS)
-       ================================================================ */
     function persistLocalDraft_(){
       try{
         localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
@@ -653,10 +596,8 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
         state.projects = Array.isArray(state.projects) ? state.projects : [];
         state.stepIndex = Number.isFinite(state.stepIndex) ? state.stepIndex : 0;
         state.committee = state.committee || "";
-        // Always override with the locked nucleus, ignoring whatever was stored.
         state.nucleus = LOCKED_NUCLEUS;
 
-        // Backfill partnerCommittees for any restored project missing the field.
         state.projects.forEach(p => {
           if (!Array.isArray(p.partnerCommittees)) p.partnerCommittees = [];
         });
@@ -667,7 +608,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
       }
     }
 
-    /* Debounced local-only save (called on every input) */
     let _localSaveTimer = null;
     function debounceSaveLocal_(){
       clearTimeout(_localSaveTimer);
@@ -682,10 +622,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
 
     window.addEventListener("beforeunload", persistLocalDraft_);
 
-    /* ================================================================
-       POST TO GAS  (hidden form + iframe — CORS-exempt)
-       Returns a Promise that resolves after a configurable delay.
-       ================================================================ */
     function postToGAS_(url, bodyObj, waitMs){
       return new Promise(function(resolve){
         var id = "gas_frame_" + Date.now() + "_" + Math.random().toString(36).slice(2);
@@ -718,10 +654,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
       });
     }
 
-    /* ================================================================
-       STRIP file dataUrls for the main data POST (keeps it small).
-       Files are uploaded separately.
-       ================================================================ */
     function stripFileDataUrls_(projects){
       return (projects || []).map(p => ({
         ...p,
@@ -736,9 +668,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
       }));
     }
 
-    /* ================================================================
-       COLLECT all files across all projects for individual upload
-       ================================================================ */
     function collectAllFiles_(){
       const files = [];
       state.projects.forEach((p, idx) => {
@@ -768,9 +697,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
       return files;
     }
 
-    /* ================================================================
-       UPLOAD files one-by-one to GAS (kind: "file_upload")
-       ================================================================ */
     async function uploadFilesSequentially_(files, statusEl){
       for (let i = 0; i < files.length; i++){
         const f = files[i];
@@ -787,7 +713,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
           dataUrl: f.dataUrl
         };
 
-        /* Wait time scales with file size: base 5s + 1s per MB */
         const sizeMB = (f.dataUrl || "").length / (1024 * 1024);
         const waitMs = Math.max(5000, Math.round(5000 + sizeMB * 1000));
 
@@ -898,8 +823,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
     function renderList(){
       const page = 1;
 
-      // Committee dropdown HTML: only rendered if we have at least one real option,
-      // otherwise show a clearly labeled placeholder select that users cannot use yet.
       const hasCommitteeOptions = COMMITTEE_OPTIONS.length > 1;
 
       app.innerHTML = `
@@ -949,7 +872,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
         </div>
       `;
 
-      // Nucleus is locked — no dynamic population needed.
       if (hasCommitteeOptions){
         const selC = document.getElementById("committee");
         selC.innerHTML = COMMITTEE_OPTIONS.map(x => `<option value="${escapeHtml(x)}" ${(state.committee===x)?"selected":""}>${escapeHtml(x)}</option>`).join("");
@@ -967,7 +889,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
       document.getElementById("go").onclick = () => {
         clearErrors_();
 
-        // Committee validation (only enforced when list exists AND flag is on)
         if (hasCommitteeOptions && COMMITTEE_REQUIRED){
           const commSel = document.getElementById("committee").value;
           if (!commSel || commSel === "Selecione…") {
@@ -976,14 +897,12 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
           }
           state.committee = commSel;
         } else if (hasCommitteeOptions) {
-          // List exists but field is optional — still capture value.
           const commSel = document.getElementById("committee").value;
           state.committee = (commSel && commSel !== "Selecione…") ? commSel : "";
         } else {
           state.committee = "";
         }
 
-        // Nucleus is locked — always use LOCKED_NUCLEUS regardless of UI state.
         state.nucleus = LOCKED_NUCLEUS;
 
         const raw = titlesEl.value;
@@ -1014,7 +933,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
           supportMaterialFiles: []
         }));
 
-        // Backfill partnerCommittees on any pre-existing project from a restored draft.
         state.projects.forEach(p => {
           if (!Array.isArray(p.partnerCommittees)) p.partnerCommittees = [];
         });
@@ -1090,26 +1008,13 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
           </div>
         </div>
 
-        <div class="line2">
-          <div class="field">
-            <div class="q">
-              <div class="qnum">${qNum(page,5)}</div>
-              <div class="qbody">
-                <label>Assinale os Núcleos que participaram desta iniciativa</label>
-                <div class="pillbox" id="partnerBox"></div>
-              </div>
-            </div>
-          </div>
+        <!-- ── CHANGE 2: 2.5 → 2.5A → 2.6 (stacked, correct DOM order for mobile) ── -->
 
-          <div class="field small">
-            <div class="q">
-              <div class="qnum">${qNum(page,6)}</div>
-              <div class="qbody">
-                <label id="lbl_volunteers">Número de voluntárias envolvidas no projeto</label>
-                <input id="volunteersInvolved" type="number" min="0" placeholder="Ex: 8" value="${escapeHtml(p.volunteersInvolved)}" />
-                <div class="err" id="err_volunteers" style="display:none;"></div>
-              </div>
-            </div>
+        <div class="q">
+          <div class="qnum">${qNum(page,5)}</div>
+          <div class="qbody">
+            <label>Assinale os Núcleos que participaram desta iniciativa</label>
+            <div class="pillbox" id="partnerBox"></div>
           </div>
         </div>
 
@@ -1123,6 +1028,15 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
                    Lista de Comitês em configuração — aguardando lista oficial.
                  </div>`
             }
+          </div>
+        </div>
+
+        <div class="q">
+          <div class="qnum">${qNum(page,6)}</div>
+          <div class="qbody">
+            <label id="lbl_volunteers">Número de voluntárias envolvidas no projeto</label>
+            <input id="volunteersInvolved" type="number" min="0" placeholder="Ex: 8" value="${escapeHtml(p.volunteersInvolved)}" />
+            <div class="err" id="err_volunteers" style="display:none;"></div>
           </div>
         </div>
 
@@ -1240,8 +1154,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
         };
       });
 
-      // Partner committees (2.5A) — same pattern as partner nuclei, only rendered
-      // when COMMITTEE_OPTIONS has actual entries beyond "Selecione…".
       if (hasCommitteeOptions){
         const partnerCommitteeBox = document.getElementById("partnerCommitteeBox");
         partnerCommitteeBox.innerHTML = COMMITTEE_OPTIONS
@@ -1759,7 +1671,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
         </tr>
       `).join("");
 
-      /* Count total files for display */
       const allFiles = collectAllFiles_();
 
       app.innerHTML = `
@@ -1822,12 +1733,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
         }
       };
 
-      /* ================================================================
-         FINAL SUBMIT:
-         1) POST form data (without file blobs) → creates the Sheet row
-         2) POST each file individually → saves to Google Drive
-         3) Navigate to "done" screen
-         ================================================================ */
       document.getElementById("submit").onclick = async () => {
         const status = document.getElementById("status");
         const btn = document.getElementById("submit");
@@ -1839,7 +1744,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
         zipBtn.disabled = true;
 
         try{
-          /* Step 1: Send main data (lightweight, no file blobs) */
           status.textContent = "Enviando dados do formulário…";
 
           const mainPayload = {
@@ -1863,7 +1767,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
           await postToGAS_(WEB_APP_URL, mainPayload, 5000);
           status.textContent = "Dados do formulário enviados ✅";
 
-          /* Step 2: Upload files one by one */
           const filesToUpload = collectAllFiles_();
 
           if (filesToUpload.length > 0) {
@@ -1871,7 +1774,6 @@ Acesse aqui o GUIA PARA PREENCHIMENTO.`;
             status.textContent = `Todos os ${filesToUpload.length} arquivo(s) enviados ✅`;
           }
 
-          /* Step 3: Clean up and go to done screen */
           try{
             localStorage.removeItem(DRAFT_STORAGE_KEY);
             localStorage.removeItem(DRAFT_STORAGE_KEY + "_id");
