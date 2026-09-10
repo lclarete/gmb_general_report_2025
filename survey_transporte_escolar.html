@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pesquisa de Transporte Escolar</title>
+<style>
+:root{
+  --bg:#eef5ff; --card:#fff; --text:#17324d; --muted:#65758a;
+  --line:#dbe8ff; --blue:#2f6bff; --violet:#6f46ff; --pink:#ec4899;
+  --soft:#f7faff; --shadow:0 16px 42px rgba(48,83,160,.13);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:Arial,Helvetica,sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 10% 0%,#fff 0,#edf5ff 27%,transparent 45%),
+    linear-gradient(180deg,#eef5ff,#dfeeff);
+}
+.app{max-width:430px;margin:0 auto;min-height:100vh;padding:12px 12px 28px}
+.top{
+  position:sticky;top:0;z-index:10;padding:6px 2px 10px;
+  backdrop-filter:blur(10px);
+  background:linear-gradient(180deg,rgba(238,245,255,.97),rgba(238,245,255,.80));
+}
+.brandrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.brand{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700}
+.brandicon{
+  width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;font-size:18px
+}
+.meta{font-size:12px;color:var(--muted);background:#fff;border:1px solid var(--line);padding:7px 9px;border-radius:999px}
+.journey{background:#ffffffd9;border:1px solid var(--line);border-radius:999px;padding:10px 12px 12px}
+.jhead{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px}
+.track{height:10px;background:#dbe7ff;border-radius:999px;position:relative}
+.fill{height:100%;width:8%;border-radius:999px;background:linear-gradient(90deg,var(--blue),var(--pink));transition:.25s}
+.bus{position:absolute;top:-13px;left:calc(8% - 14px);font-size:20px;transition:.25s}
+.screen{margin-top:10px;background:#ffffffa6;border:1px solid #fff;border-radius:30px;padding:12px;box-shadow:var(--shadow)}
+.hero{padding:6px 4px 8px}
+.hero-card{
+  background:linear-gradient(180deg,#fff,#f0f5ff);
+  border:1px solid var(--line);border-radius:26px;padding:19px 17px;min-height:165px;position:relative;overflow:hidden
+}
+h1{font-size:27px;line-height:1.06;margin:0 0 9px;max-width:255px}
+.hero p{font-size:14px;line-height:1.45;color:var(--muted);margin:0;max-width:260px}
+.roadart{position:absolute;right:0;bottom:0;width:135px;height:92px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:18px 16px}
+.step{display:none}.step.active{display:block}
+.tag{display:inline-flex;gap:7px;align-items:center;background:#eef3ff;color:#355397;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:700;margin-bottom:11px}
+h2{font-size:23px;line-height:1.15;margin:0 0 7px}
+.helper{font-size:14px;color:var(--muted);line-height:1.45;margin:0 0 15px}
+.grid{display:grid;gap:11px}.grid.two{grid-template-columns:1fr 1fr}
+.option,.choice,.rating{
+  border:2px solid var(--line);background:#fff;border-radius:20px;cursor:pointer;transition:.16s
+}
+.option{min-height:100px;padding:13px 11px;text-align:left;display:flex;flex-direction:column;gap:7px}
+.option.selected,.choice.selected,.rating.selected{border-color:var(--blue);background:#eef4ff;box-shadow:0 8px 20px rgba(47,107,255,.09)}
+.icon{font-size:27px}.label{font-size:15px;font-weight:700}.sub{font-size:12px;color:var(--muted);line-height:1.35}
+.inputbox{border:2px solid var(--line);border-radius:18px;padding:13px;background:#fff;margin-top:9px}
+input[type="text"],input[type="time"],textarea{
+  width:100%;border:0;outline:none;background:transparent;font:inherit;color:var(--text)
+}
+input[type="time"]{font-size:24px;font-weight:700}
+textarea{min-height:105px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.chip{border:2px solid var(--line);background:#fff;border-radius:999px;padding:10px 12px;font-size:13px;font-weight:700;cursor:pointer}
+.chip.selected{border-color:var(--blue);background:#eef4ff;color:#234a8a}
+.choice-list{display:grid;gap:10px}
+.choice{padding:13px;display:flex;align-items:center;gap:11px;text-align:left}
+.cemoji{font-size:25px}.ctxt{font-size:15px;font-weight:700}
+.ratings{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.rating{min-height:105px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px}
+.remoji{font-size:29px}.rtxt{font-size:11px;text-align:center;font-weight:700;line-height:1.15}
+.followup{display:none;margin-top:14px;padding:13px;border:2px solid var(--line);border-radius:18px;background:var(--soft)}
+.followup.show{display:block}
+.followup label{display:block;font-size:13px;font-weight:700;margin-bottom:8px}
+.followup-options{display:flex;flex-wrap:wrap;gap:8px}
+.followup-choice{
+  border:2px solid var(--line);background:#fff;border-radius:999px;
+  padding:9px 11px;font-size:12px;font-weight:700;cursor:pointer;color:#334155
+}
+.followup-choice.selected{border-color:var(--blue);background:#eef4ff;color:#234a8a}
+.actions{display:flex;gap:10px;margin-top:16px}
+.btn{flex:1;border:0;border-radius:17px;padding:14px;font-size:15px;font-weight:700;cursor:pointer}
+.back{background:#eaf0ff;color:#29467d}.next{background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff}
+.thanks{text-align:center;padding:18px 8px 10px}
+.finish{width:90px;height:90px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:40px;background:linear-gradient(135deg,#ffc64d,#ff8f5b)}
+.thanks h2{font-size:28px}.thanks p{font-size:15px;line-height:1.45;color:var(--muted)}
+@media(max-width:360px){
+  .ratings{gap:5px}.rtxt{font-size:10px}.remoji{font-size:25px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brandrow">
+      <div class="brand"><div class="brandicon">🚌</div><span>Transporte Escolar</span></div>
+      <div class="meta">4–5 min</div>
+    </div>
+    <div class="journey">
+      <div class="jhead"><span id="progressLabel">1 de 12</span><span id="progressPercent">8%</span></div>
+      <div class="track"><div class="fill" id="fill"></div><div class="bus" id="bus">🚌</div></div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="hero" id="hero">
+      <div class="hero-card">
+        <h1>Como é o caminho até a escola?</h1>
+        <p>Queremos entender a rotina, o transporte e a experiência dos estudantes na sua comunidade.</p>
+        <svg class="roadart" viewBox="0 0 180 120" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 99C30 78 57 77 82 80c27 3 43 16 68 11 12-2 21-8 30-14v43H0z" fill="#c8e8ce"/>
+          <rect x="22" y="48" width="92" height="34" rx="10" fill="#ffd154"/>
+          <rect x="33" y="55" width="24" height="14" rx="3" fill="#eff6ff"/>
+          <rect x="62" y="55" width="24" height="14" rx="3" fill="#eff6ff"/>
+          <circle cx="41" cy="86" r="10" fill="#334155"/><circle cx="96" cy="86" r="10" fill="#334155"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="card">
+
+      <div class="step active">
+        <div class="tag">👤 Sobre você</div>
+        <h2>Qual é a sua relação com o estudante?</h2>
+        <p class="helper">Escolha uma opção.</p>
+        <div class="grid two single respondent-group">
+          <button class="option" data-role="guardian"><div class="icon">👨‍👩‍👧</div><div class="label">Pai, mãe ou responsável</div></button>
+          <button class="option" data-role="student"><div class="icon">🎒</div><div class="label">Sou o estudante</div></button>
+          <button class="option" data-role="other"><div class="icon">👥</div><div class="label">Outra pessoa</div></button>
+        </div>
+      </div>
+
+      <div class="step disqualified-step">
+        <div class="thanks">
+          <div class="finish">🙏</div>
+          <h2>Obrigado pelo interesse</h2>
+          <p>Esta pesquisa é destinada a estudantes ou a pais, mães e responsáveis por estudantes.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="tag">🌅 Rotina</div>
+        <h2>Que horas o estudante costuma acordar para ir à escola?</h2>
+        <p class="helper">Informe o horário mais comum.</p>
+        <div class="inputbox"><input type="time" value="06:00"></div>
+      </div>
+
+      <div class="step">
+        <div class="tag">🎂 Idade</div>
+        <h2>Qual é a idade do estudante?</h2>
+        <p class="helper">Escolha a faixa etária.</p>
+        <div class="grid two single">
+          <button class="option"><div class="icon">🧒</div><div class="label">4–6 anos</div></button>
+          <button class="option"><div class="icon">🎒</div><div class="label">7–10 anos</div></button>
+          <button class="option"><div class="icon">📘</div><div class="label">11–14 anos</div></button>
+          <button class="option"><div class="icon">🎓</div><div class="label">15 anos ou mais</div></button>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="tag">📍 Distância</div>
+        <h2>Aproximadamente, qual é a distância entre a casa e a escola?</h2>
+        <p class="helper">Escolha a opção mais próxima.</p>
+        <div class="grid two single">
+          <button class="option"><div class="icon">🏠</div><div class="label">Até 2 km</div></button>
+          <button class="option"><div class="icon">🛣️</div><div class="label">3–5 km</div></button>
+          <button class="option"><div class="icon">🗺️</div><div class="label">6–10 km</div></button>
+          <button class="option"><div class="icon">🌄</div><div class="label">Mais de 10 km</div></button>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="tag">🚦 Deslocamento</div>
+        <h2>Quais meios de transporte o estudante usa para chegar à escola?</h2>
+        <p class="helper">Pode selecionar mais de um.</p>
+        <div class="chips multi">
+          <button class="chip">🚌 Ônibus escolar</button>
+          <button class="chip">🚐 Van</button>
+          <button class="chip">🚗 Carro</button>
+          <button class="chip">🏍️ Moto</button>
+          <button class="chip">⛵ Barco / canoa</button>
+          <button class="chip">🚲 Bicicleta</button>
+          <button class="chip">🚶 A pé</button>
+          <button class="chip" id="otherMode">✍️ Outro</button>
+        </div>
+        <div class="followup" id="otherModeBox">
+          <label>Qual outro meio?</label>
+          <input type="text" placeholder="Digite aqui">
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="tag">⏱️ Tempo</div>
+        <h2>Quanto tempo leva o trajeto de ida até a escola?</h2>
+        <p class="helper">Pense em um dia normal.</p>
+        <div class="grid two single">
+          <button class="option"><div class="icon">⚡</div><div class="label">Até 15 min</div></button>
+          <button class="option"><div class="icon">🕒</div><div class="label">16–30 min</div></button>
+          <button class="option"><div class="icon">🕓</div><div class="label">31–60 min</div></button>
+          <button class="option"><div class="icon">🌄</div><div class="label">Mais de 1 hora</div></button>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="tag">🚶 Acesso</div>
+        <h2>Quanto tempo o estudante caminha até chegar ao transporte?</h2>
+        <p class="helper">Se não precisa caminhar, escolha “Não caminha”.</p>
+        <div class="choice-list single-choice">
+          <button class="choice"><div class="cemoji">🏠</div><div class="ctxt">Não caminha</div></button>
+          <button class="choice"><div class="cemoji">🚶</div><div class="ctxt">Até 10 minutos</div></button>
+          <button class="choice"><div class="cemoji">🥾</div><div class="ctxt">11–30 minutos</div></button>
+          <button class="choice"><div class="cemoji">🗺️</div><div class="ctxt">Mais de 30 minutos</div></button>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="tag">📅 Disponibilidade</div>
+        <h2>Com que frequência o transporte está disponível quando o estudante precisa?</h2>
+        <div class="ratings single-rating" data-type="availability">
+          <button class="rating" data-score="1"><div class="remoji">🚫</div><div class="rtxt">Nunca</div></button>
+          <button class="rating" data-score="2"><div class="remoji">🌧️</div><div class="rtxt">Raramente</div></button>
+          <button class="rating" data-score="3"><div class="remoji">🟡</div><div class="rtxt">Às vezes</div></button>
+          <button class="rating" data-score="4"><div class="remoji">👍</div><div class="rtxt">Quase sempre</div></button>
+          <button class="rating" data-score="5"><div class="remoji">✅</div><div class="rtxt">Sempre</div></button>
+        </div>
+        <div class="followup dynamic-followup"></div>
+      </div>
+
+      <div class="step">
+        <div class="tag">🛡️ Segurança</div>
+        <h2>Como você avalia a segurança do transporte?</h2>
+        <div class="ratings single-rating" data-type="safety">
+          <button class="rating" data-score="1"><div class="remoji">🚨</div><div class="rtxt">Muito ruim</div></button>
+          <button class="rating" data-score="2"><div class="remoji">⚠️</div><div class="rtxt">Ruim</div></button>
+          <button class="rating" data-score="3"><div class="remoji">🟡</div><div class="rtxt">Regular</div></button>
+          <button class="rating" data-score="4"><div class="remoji">🛡️</div><div class="rtxt">Boa</div></button>
+          <button class="rating" data-score="5"><div class="remoji">✅</div><div class="rtxt">Muito boa</div></button>
+        </div>
+        <div class="followup dynamic-followup"></div>
+      </div>
+
+      <div class="step">
+        <div class="tag">💺 Conforto</div>
+        <h2>Como você avalia o conforto do transporte?</h2>
+        <div class="ratings single-rating" data-type="comfort">
+          <button class="rating" data-score="1"><div class="remoji">😣</div><div class="rtxt">Muito ruim</div></button>
+          <button class="rating" data-score="2"><div class="remoji">🙁</div><div class="rtxt">Ruim</div></button>
+          <button class="rating" data-score="3"><div class="remoji">😐</div><div class="rtxt">Regular</div></button>
+          <button class="rating" data-score="4"><div class="remoji">🙂</div><div class="rtxt">Bom</div></button>
+          <button class="rating" data-score="5"><div class="remoji">🤩</div><div class="rtxt">Muito bom</div></button>
+        </div>
+        <div class="followup dynamic-followup"></div>
+      </div>
+
+      <div class="step">
+        <div class="tag">⏰ Pontualidade</div>
+        <h2>Como você avalia a pontualidade do transporte?</h2>
+        <div class="ratings single-rating" data-type="punctuality">
+          <button class="rating" data-score="1"><div class="remoji">🚨</div><div class="rtxt">Muito ruim</div></button>
+          <button class="rating" data-score="2"><div class="remoji">⌛</div><div class="rtxt">Ruim</div></button>
+          <button class="rating" data-score="3"><div class="remoji">🟡</div><div class="rtxt">Regular</div></button>
+          <button class="rating" data-score="4"><div class="remoji">👍</div><div class="rtxt">Boa</div></button>
+          <button class="rating" data-score="5"><div class="remoji">✅</div><div class="rtxt">Muito boa</div></button>
+        </div>
+        <div class="followup dynamic-followup"></div>
+      </div>
+
+      <div class="step">
+        <div class="tag">✨ Limpeza</div>
+        <h2>Como você avalia a limpeza do transporte?</h2>
+        <div class="ratings single-rating" data-type="cleanliness">
+          <button class="rating" data-score="1"><div class="remoji">😖</div><div class="rtxt">Muito ruim</div></button>
+          <button class="rating" data-score="2"><div class="remoji">🙁</div><div class="rtxt">Ruim</div></button>
+          <button class="rating" data-score="3"><div class="remoji">🟡</div><div class="rtxt">Regular</div></button>
+          <button class="rating" data-score="4"><div class="remoji">✨</div><div class="rtxt">Boa</div></button>
+          <button class="rating" data-score="5"><div class="remoji">🌟</div><div class="rtxt">Muito boa</div></button>
+        </div>
+        <div class="followup dynamic-followup"></div>
+      </div>
+
+      <div class="step">
+        <div class="tag">🧩 Situações</div>
+        <h2>Quais situações acontecem com esse transporte?</h2>
+        <p class="helper">Selecione tudo o que se aplica.</p>
+        <div class="chips multi">
+          <button class="chip">⏰ Atrasos</button>
+          <button class="chip">📅 Falta de transporte</button>
+          <button class="chip">🌧️ Interrupções por clima</button>
+          <button class="chip">🛣️ Problemas no caminho</button>
+          <button class="chip">👥 Lotação</button>
+          <button class="chip">🔧 Problemas no veículo</button>
+          <button class="chip">🕐 Viagem muito longa</button>
+          <button class="chip">💸 Custo</button>
+          <button class="chip">✅ Nenhuma dessas</button>
+          <button class="chip" id="otherSituation">✍️ Outra</button>
+        </div>
+        <div class="followup" id="otherSituationBox">
+          <label>Qual outra situação?</label>
+          <input type="text" placeholder="Digite aqui">
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="tag">📚 Impacto</div>
+        <h2>Nos últimos 30 dias, o transporte fez o estudante chegar atrasado ou faltar à escola?</h2>
+        <div class="choice-list single-choice">
+          <button class="choice"><div class="cemoji">✅</div><div class="ctxt">Não</div></button>
+          <button class="choice"><div class="cemoji">1️⃣</div><div class="ctxt">1 vez</div></button>
+          <button class="choice"><div class="cemoji">2️⃣</div><div class="ctxt">2–3 vezes</div></button>
+          <button class="choice"><div class="cemoji">🚨</div><div class="ctxt">4 vezes ou mais</div></button>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="tag">💬 Final</div>
+        <h2>Quer contar mais alguma coisa sobre o transporte escolar?</h2>
+        <p class="helper">Opcional.</p>
+        <div class="inputbox"><textarea placeholder="Escreva aqui..."></textarea></div>
+      </div>
+
+      <div class="step">
+        <div class="thanks">
+          <div class="finish">🏁</div>
+          <h2>Obrigado pelas respostas</h2>
+          <p>Suas respostas ajudam a entender melhor a experiência do transporte escolar na comunidade.</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn back" id="backBtn">Voltar</button>
+        <button class="btn next" id="nextBtn">Próxima</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const steps=[...document.querySelectorAll('.step')];
+const totalQuestions=steps.length-2;
+const fill=document.getElementById('fill');
+const bus=document.getElementById('bus');
+const label=document.getElementById('progressLabel');
+const pct=document.getElementById('progressPercent');
+const next=document.getElementById('nextBtn');
+const back=document.getElementById('backBtn');
+const hero=document.getElementById('hero');
+let current=0;
+
+function render(){
+  steps.forEach((s,i)=>s.classList.toggle('active',i===current));
+  hero.style.display=current===0?'block':'none';
+  back.style.visibility=current===0?'hidden':'visible';
+  next.textContent=current===totalQuestions?'Recomeçar':(current===totalQuestions-1?'Finalizar':'Próxima');
+  if(current===1){
+    fill.style.width='100%'; bus.style.left='calc(100% - 14px)';
+    label.textContent='Encerrado'; pct.textContent='100%';
+    next.textContent='Voltar ao início';
+    back.style.visibility='hidden';
+    return;
+  }
+  const adjustedCurrent = current > 1 ? current - 1 : current;
+  const q=Math.min(adjustedCurrent+1,totalQuestions);
+  const p=adjustedCurrent>=totalQuestions?100:Math.round((q/totalQuestions)*100);
+  fill.style.width=p+'%'; bus.style.left=`calc(${p}% - 14px)`;
+  label.textContent=adjustedCurrent>=totalQuestions?'Concluído':`${q} de ${totalQuestions}`;
+  pct.textContent=p+'%';
+}
+document.querySelectorAll('.single').forEach(g=>{
+  g.querySelectorAll('.option').forEach(b=>b.onclick=()=>{
+    g.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));
+    b.classList.add('selected');
+  });
+});
+document.querySelectorAll('.single-choice').forEach(g=>{
+  g.querySelectorAll('.choice').forEach(b=>b.onclick=()=>{
+    g.querySelectorAll('.choice').forEach(x=>x.classList.remove('selected'));
+    b.classList.add('selected');
+  });
+});
+document.querySelectorAll('.multi .chip').forEach(b=>b.onclick=()=>b.classList.toggle('selected'));
+
+function wireOther(chipId,boxId){
+  const chip=document.getElementById(chipId),box=document.getElementById(boxId);
+  chip.addEventListener('click',()=>setTimeout(()=>{
+    box.classList.toggle('show',chip.classList.contains('selected'));
+  },0));
+}
+wireOther('otherMode','otherModeBox');
+wireOther('otherSituation','otherSituationBox');
+
+document.querySelectorAll('.single-rating').forEach(group=>{
+  const follow=group.nextElementSibling;
+  group.querySelectorAll('.rating').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      group.querySelectorAll('.rating').forEach(x=>x.classList.remove('selected'));
+      btn.classList.add('selected');
+      const score=Number(btn.dataset.score);
+      const type=group.dataset.type;
+      follow.innerHTML='';
+      follow.classList.remove('show');
+
+      const reasons = {
+        availability: {
+          low: ['Transporte não passa todos os dias','Mudança de rota','Problema com veículo','Clima','Falta de motorista','Outro'],
+          good: ['Passa nos dias esperados','Horários previsíveis','Poucas interrupções','Boa comunicação','Outro']
+        },
+        safety: {
+          low: ['Condições do caminho','Estado do veículo','Lotação','Forma de condução','Embarque/desembarque','Outro'],
+          good: ['Veículo em boas condições','Condução cuidadosa','Trajeto seguro','Embarque organizado','Outro']
+        },
+        comfort: {
+          low: ['Veículo lotado','Assentos desconfortáveis','Calor ou ventilação','Tempo de viagem','Condições do veículo','Outro'],
+          good: ['Espaço adequado','Assentos confortáveis','Boa ventilação','Viagem tranquila','Outro']
+        },
+        punctuality: {
+          low: ['Atrasos na saída','Atrasos no trajeto','Horário varia muito','Problemas na rota','Outro'],
+          good: ['Chega no horário','Horário consistente','Poucos atrasos','Outro']
+        },
+        cleanliness: {
+          low: ['Sujeira no veículo','Odor','Limpeza pouco frequente','Condições dos assentos','Outro'],
+          good: ['Veículo limpo','Limpeza frequente','Assentos bem cuidados','Outro']
+        }
+      };
+
+      if(score <= 3 || score === 4){
+        const mode = score <= 3 ? 'low' : 'good';
+        const title = score <= 3 ? 'O que mais influencia essa avaliação?' : 'O que está funcionando bem?';
+        const opts = reasons[type][mode];
+        follow.innerHTML = `<label>${title}</label><div class="followup-options">${opts.map(o=>`<button type="button" class="followup-choice">${o}</button>`).join('')}</div>`;
+        follow.classList.add('show');
+        follow.querySelectorAll('.followup-choice').forEach(c=>{
+          c.addEventListener('click',()=>c.classList.toggle('selected'));
+        });
+      }
+    });
+  });
+});
+
+document.querySelectorAll('.respondent-group .option').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(btn.dataset.role==='other'){
+      current = 1;
+      render();
+    }
+  });
+});
+
+next.onclick=()=>{
+  if(current===1){ current=0; render(); return; }
+
+  if(current===0){
+    const selected = document.querySelector('.respondent-group .option.selected');
+    if(selected && selected.dataset.role==='other'){
+      current = 1;
+      render();
+      return;
+    }
+    if(selected && (selected.dataset.role==='guardian' || selected.dataset.role==='student')){
+      current = 2;
+      render();
+      return;
+    }
+  }
+
+  current=current<steps.length-1?current+1:0;
+  render();
+};
+back.onclick=()=>{ if(current>0)current--; render(); };
+render();
+</script>
+</body>
+</html>
